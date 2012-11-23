@@ -3,8 +3,8 @@ using System.Drawing;
 using System.Collections;
 using System.ComponentModel;
 using System.Windows.Forms;
-using System.IO;
 using System.Data;
+using System.IO;
 using Microsoft.Ink;
 
 
@@ -17,7 +17,7 @@ namespace GraphAnimator
 	{
 		private System.ComponentModel.IContainer components;
 		private InkOverlay inkOverlay;
-		private string PATH = Directory.GetCurrentDirectory()+"\\";
+		private string PATH = Directory.GetCurrentDirectory();
 		private Nodes nodes;
 		private Edges edges;
 		private Node home, destination;
@@ -162,6 +162,10 @@ namespace GraphAnimator
 			this.toolBar1.TabIndex = 0;
 			this.toolBar1.ButtonClick += new System.Windows.Forms.ToolBarButtonClickEventHandler(this.toolBar1_ButtonClick);
 			this.toolBar1.ImageList = imageList1;
+			//
+			//toolBarButtonPen
+			//
+			toolBarButtonPen.Pushed = true;
 			// 
 			// toolBarButton5
 			// 
@@ -178,17 +182,18 @@ namespace GraphAnimator
 			//
 			//Image List Files
 			//
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App0.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App1.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App2.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App3.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App4.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App5.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App6.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App7.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App8.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App9.bmp"));
-			imageList1.Images.Add(Image.FromFile(PATH+"imgs\\App10.bmp"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\new.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\open.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\save.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\saveas.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\pen.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\eraser.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\lasso.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\play.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\pause.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stop.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stepb.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stepf.png"));
 			//
 			//ToolBar Button Indexing
 			//
@@ -200,9 +205,9 @@ namespace GraphAnimator
 			this.toolBarButtonEraser.ImageIndex = 5;
 			this.toolBarButtonSelection.ImageIndex = 6;
 			this.toolBarButtonPlayPause.ImageIndex = 7;
-			this.toolBarButtonStop.ImageIndex = 8;
-			this.toolBarButtonStepBack.ImageIndex = 9;
-			this.toolBarButtonStepForward.ImageIndex = 10;
+			this.toolBarButtonStop.ImageIndex = 9;
+			this.toolBarButtonStepBack.ImageIndex = 10;
+			this.toolBarButtonStepForward.ImageIndex = 11;
 			// 
 			// Canvas
 			// 
@@ -275,7 +280,11 @@ namespace GraphAnimator
 
 		private void playPauseButton(object sender, System.EventArgs e)
 		{
-		
+			switch(toolBarButtonPlayPause.ImageIndex)
+			{
+				case 7: toolBarButtonPlayPause.ImageIndex = 8; break;
+				case 8: toolBarButtonPlayPause.ImageIndex = 7; break;
+			}
 		}
 
 		private void stopButton(object sender, System.EventArgs e)
@@ -361,10 +370,21 @@ namespace GraphAnimator
 			Node n = nodes.getTappedNode(e.Stroke);
 			if(n != null)
 			{
-				int[] ids = {n.Stroke.Id};
-				selectionButton(sender, e);
-				inkOverlay.Selection = e.Stroke.Ink.CreateStrokes(ids);
-				e.Stroke.Ink.DeleteStroke(e.Stroke);
+				if(inkOverlay.EditingMode == InkOverlayEditingMode.Delete)
+				{
+					foreach(Edge edge in n.Edges)
+					{
+						edges.Remove(edge);
+					}
+					nodes.Remove(n);
+				}
+				else
+				{
+					int[] ids = {n.Stroke.Id};
+					selectionButton(sender, e);
+					inkOverlay.Selection = e.Stroke.Ink.CreateStrokes(ids);
+					e.Stroke.Ink.DeleteStroke(e.Stroke);
+				}
 				Invalidate();
 				return;
 			}
@@ -388,14 +408,12 @@ namespace GraphAnimator
 				}
 				else if(e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
 				{
-					MessageBox.Show("You drew a circle!","Stroker");
 					Stroke circle = StrokeManager.makeCircle(inkOverlay, e.Stroke);
 					Node circleNode = new Node(circle, false);
 					nodes.Add(circleNode);
 				}
 				else if(e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
 				{
-					MessageBox.Show("You drew a rectangle!","Stroker");
 					Stroke rect = StrokeManager.makeRect(inkOverlay, e.Stroke);
 					Node rectNode = new Node(rect, true);
 					nodes.Add(rectNode);
@@ -473,6 +491,8 @@ namespace GraphAnimator
 		}
 		#endregion
 
+
+		#region toolBar1 Button Handlers
 		private void toolBar1_ButtonClick(object sender, System.Windows.Forms.ToolBarButtonClickEventArgs e)
 		{
 			if(e.Button.Equals(toolBarButtonNew))
@@ -499,6 +519,7 @@ namespace GraphAnimator
 				stepForwardButton(sender,e);
 
 		}
+		#endregion
 
 	}
 }
