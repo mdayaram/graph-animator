@@ -331,7 +331,7 @@ namespace GraphAnimator
 		public static bool isStar(Stroke s)
 		{
 			Console.WriteLine("Count; "+s.SelfIntersections.Length);
-			return s.SelfIntersections.Length > 3 && s.SelfIntersections.Length < 20 && StrokeManager.isClosed(s, 600);
+            return s.SelfIntersections.Length > 0;// 3 && s.SelfIntersections.Length < 20 && StrokeManager.isClosed(s, 600);
 		}
 
 		/* Determines whether the stroke coule be interpreted as a

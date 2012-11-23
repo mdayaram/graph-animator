@@ -189,16 +189,19 @@ namespace GraphAnimator
 			// 
 			this.toolBarButtonOpen.ImageIndex = 1;
 			this.toolBarButtonOpen.ToolTipText = "Open";
+            this.toolBarButtonOpen.Enabled = false;
 			// 
 			// toolBarButtonSave
 			// 
 			this.toolBarButtonSave.ImageIndex = 2;
 			this.toolBarButtonSave.ToolTipText = "Save";
+            this.toolBarButtonSave.Enabled = false;
 			// 
 			// toolBarButtonSaveAs
 			// 
 			this.toolBarButtonSaveAs.ImageIndex = 3;
 			this.toolBarButtonSaveAs.ToolTipText = "Save As";
+            this.toolBarButtonSaveAs.Enabled = false;
 			// 
 			// toolBarButton5
 			// 
@@ -335,8 +338,8 @@ namespace GraphAnimator
 			this.inkOverlay.Ink.DeleteStrokes(inkOverlay.Ink.Strokes);
 			penButton(sender, e);
 			if(anim != null) anim.Stop();
-			anim = null;
-			comboBox1.Text = "Algorithm";
+            anim = new DijkstraAnimation(this);
+			comboBox1.Text = anim.ToString();
 			togglePlayPause(PLAY);
 			Invalidate();
 		}
@@ -750,6 +753,8 @@ namespace GraphAnimator
 
 		public void AddAnimation(Animation anim)
 		{
+            this.anim = anim;
+            this.comboBox1.Text = anim.ToString();
 			this.comboBox1.Items.Add(anim.ToString());
 			animations.Add(anim);
 		}
