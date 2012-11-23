@@ -82,6 +82,10 @@ namespace GraphAnimator
 			return list.Contains(e);
 		}
 
+		public Edge HitEdgeTest(Stroke s)
+		{
+		}
+
 		public IEnumerator GetEnumerator()
 		{
 			return list.GetEnumerator();

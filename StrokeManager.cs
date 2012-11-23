@@ -11,8 +11,9 @@ namespace GraphAnimator
 		public static double SMALLEST_N_SIZE = 25,
 							CIRCLE_TOLERANCE = 700,
 							RECT_TOLERANCE = 1500,
-							CLOSED_TOLERANCE = 1000;
-
+							CLOSED_TOLERANCE = 1000,
+							R_MIN = 100,
+							C_MIN = 50;
 		public StrokeManager(){	}
 		
 		#region Node Analysis Methods
@@ -20,15 +21,12 @@ namespace GraphAnimator
 		{
 			if(e == null) return false;
 			Rectangle r = e.GetBoundingBox();
-			double radius = r.Height / 2.0;
+			double radius = StrokeManager.Avg(r.Height,r.Width) / 2.0;
+			if(radius < C_MIN) return false;
 			double perimeter = 2.0*radius*Math.PI;
 			Point[] points = e.GetPoints();
-			double distance = 0;
-			for(int i=0; i<points.Length-1; i++)
-			{
-				distance += StrokeManager.distance(points[i], points[i+1]);
-			}
-			return Math.Abs(perimeter-distance) <= tolerance;
+			double strokeLength = StrokeManager.StrokeLength(e);
+			return Math.Abs(perimeter-strokeLength) <= tolerance;
 		}
 		public static bool FitsCircleProperties(Stroke e)
 		{
@@ -37,16 +35,12 @@ namespace GraphAnimator
 
 		public static bool FitsRectProperties(Stroke e, double tolerance)
 		{
-			if (e == null || e.SelfIntersections.Length > 1 || FitsCircleProperties(e,CIRCLE_TOLERANCE)) return false;
+			if (e == null || FitsCircleProperties(e,CIRCLE_TOLERANCE)) return false;
 			Rectangle r = e.GetBoundingBox();
+			if(r.Height < R_MIN || r.Width < R_MIN) return false;
 			double perimeter = r.Height*2 + r.Width*2;
-			Point[] points = e.GetPoints();
-			double distance = 0;
-			for(int i=0; i<points.Length-1; i++)
-			{
-				distance += StrokeManager.distance(points[i], points[i+1]);
-			}
-			return Math.Abs(perimeter-distance) <= tolerance;
+			double strokeLength = StrokeManager.StrokeLength(e);
+			return Math.Abs(perimeter-strokeLength) <= tolerance;
 		}
 		public static bool FitsRectProperties(Stroke e)
 		{
@@ -58,7 +52,7 @@ namespace GraphAnimator
 			if(s == null) 
 				return false;
 			Point[] pts = {s.GetPoint(0), s.GetPoint(s.PacketCount-1)};
-			return distance(pts[0], pts[1]) <= tolerance;
+			return StrokeManager.Distance(pts[0], pts[1]) <= tolerance;
 		}
 		public static bool isClosed(Stroke e)
 		{
@@ -66,12 +60,51 @@ namespace GraphAnimator
 		}
 
 		#endregion
-		public static double distance(Point a, Point b)
+		public static double Distance(Point a, Point b)
 		{
 			double x = a.X - b.X;
 			double y = a.Y - b.Y;
 			return Math.Abs(Math.Sqrt(x*x + y*y));
 		}
+		public static double StrokeLength(Stroke e)
+		{
+			double dist = 0;
+			Point[] points = e.GetPoints();
+			for(int i=0; i<points.Length-1; i++)
+			{
+				dist += StrokeManager.Distance(points[i], points[i+1]);
+			}
+			return dist;
+		}
+		public static double Avg(double[] arr)
+		{
+			double sum = 0;
+			foreach(double i in arr)
+			{
+				sum += i;
+			}
+			return sum/arr.Length;
+		}
+		public static double Avg(int[] arr)
+		{ 
+			double[] darr = new double[arr.Length];
+			for(int i=0; i<arr.Length; i++)
+			{
+				darr[i] = (double)arr[i];
+			}
+			return Avg(darr);
+		}
+		public static double Avg(double a, double b)
+		{
+			double[] arr = {a, b};
+			return Avg(arr);
+		}
+		public static double Avg(int a, int b)
+		{
+			double[] arr = {(double)a, (double)b};
+			return Avg(arr);
+		}
+
 
 		#region Make Circular and Rectangular Strokes
 		public static Stroke makeCircle(InkOverlay i, Stroke s)

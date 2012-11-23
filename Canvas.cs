@@ -18,6 +18,7 @@ namespace GraphAnimator
 
 		private System.ComponentModel.IContainer components;
 		private InkOverlay inkOverlay;
+		private RecognizerContext myRecognizer;
 		private string PATH = Directory.GetCurrentDirectory();
 		private Nodes nodes;
 		private Edges edges;
@@ -68,6 +69,7 @@ namespace GraphAnimator
 
 			this.Paint += new PaintEventHandler(Canvas_Paint);
 			inkOverlay = new InkOverlay(this.Handle, true); //attach to form, allow use of mouse for input
+			myRecognizer = new RecognizerContext();
 			inkOverlay.CollectionMode =	CollectionMode.InkOnly;	// do not allow gestures
 
 			inkOverlay.AutoRedraw =	false; // Dynamic rendering	only; we do	all	the	painting.

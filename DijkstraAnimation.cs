@@ -13,6 +13,12 @@ namespace GraphAnimator
 		
 		public static int TIME_STEP = 1500;
 		public static string INFINITY = "Inf";
+		public static Color INQUEUE_N = Color.Salmon,
+							INQUEUE_E = Color.Salmon,
+							POPPED_N = Color.SteelBlue,
+							POPPED_E = Color.SteelBlue,
+							FOUND_N = Color.Cyan,
+							FOUND_E = Color.Blue;
 
 		private Nodes popped;
 		private IPriorityQueue pq;
@@ -74,6 +80,14 @@ namespace GraphAnimator
 		{
 			if(wasFound) 
 			{
+				Node tmp = destination;
+				do
+				{
+					tmp.Color = FOUND_N;
+					if(tmp.Incoming == null) break;
+					tmp.Incoming.Color = FOUND_E;
+					tmp = Node.GetOther(tmp, tmp.Incoming);
+				}while(tmp != null);
 				MessageBox.Show("Destination Node Found!","Found!");
 			}
 			else
@@ -93,10 +107,10 @@ namespace GraphAnimator
 				return;
 			}
 			popNode = pq.Pop() as Node;
-			popNode.Color = Color.Cyan;
+			popNode.Color = POPPED_N;
 
 			if(popNode.Incoming != null)
-				popNode.Incoming.Color = Color.Blue;
+				popNode.Incoming.Color = POPPED_E;
 
 			popped.Add(popNode);
 			if(popNode.Equals(destination))
@@ -114,11 +128,12 @@ namespace GraphAnimator
 			{
 				Node n = Node.GetOther(popNode, edge);
 				if(popped.Contains(n)) continue;
-				edge.Color = Color.Salmon;
+				edge.Color = INQUEUE_E;
 				n.Proposed = edge.Weight + Node.GetOther(n,edge).Distance;
-				n.Incoming = edge;
+				if(n.Proposed < n.Distance)
+					n.Incoming = edge;
 				n.Text = edge.Weight.ToString()+"+"+popNode.Distance.ToString();
-				n.Color = Color.Salmon;
+				n.Color = INQUEUE_N;
 				pushing.Add(n);
 			}
 			stepCount = 2;
@@ -140,7 +155,6 @@ namespace GraphAnimator
 				else
 				{
 					n.Text = getDistance(n.Distance)+"<="+n.Proposed;
-					n.Incoming = null;
 				}
 			}
 			stepCount = 3;
