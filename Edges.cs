@@ -1,5 +1,6 @@
 using System;
 using Microsoft.Ink;
+using System.Drawing;
 using System.Collections;
 
 namespace GraphAnimator
@@ -7,6 +8,7 @@ namespace GraphAnimator
 	public class Edges
 	{
 		private ArrayList list;
+		private static int HIT_TEST_THRESHOLD = 2500;
 
 		public Edges() {list = new ArrayList();}
 		public Edges(int capacity) {list = new ArrayList(capacity);}
@@ -84,6 +86,24 @@ namespace GraphAnimator
 
 		public Edge HitEdgeTest(Stroke s)
 		{
+			Point[] points = s.GetPoints();
+			if(StrokeManager.StrokeLength(s) > HIT_TEST_THRESHOLD) return null;
+			float distance = 100;
+			Edge hitedge = null;
+			foreach(Edge e in this)
+			{
+				foreach(Point p in points)
+				{
+					float tmp;
+					e.Stroke.NearestPoint(p, out tmp);
+					if(tmp < distance)
+					{
+						distance = tmp;
+						hitedge = e;
+					}
+				}
+			}
+			return hitedge;
 		}
 
 		public IEnumerator GetEnumerator()

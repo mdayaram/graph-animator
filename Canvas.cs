@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Windows.Forms;
 using System.Data;
 using System.IO;
+using System.Timers;
 using Microsoft.Ink;
 
 
@@ -18,15 +19,20 @@ namespace GraphAnimator
 
 		private System.ComponentModel.IContainer components;
 		private InkOverlay inkOverlay;
-		private RecognizerContext myRecognizer;
 		private string PATH = Directory.GetCurrentDirectory();
+		private const int TIME_INTERVAL = 1000;
 		private Nodes nodes;
 		private Edges edges;
 		private Node home, destination;
 		private Animation anim;
+		private RecognizerContext myRecognizer;
 		private bool animStarted;
 		private int animType;
-
+		//**********************
+		private int weight;
+		private Edge prevEdgeHit;
+		private System.Timers.Timer timer;
+		//**********************
 
 		#region Menu Items
 		private System.Windows.Forms.ImageList imgMenu;
@@ -59,6 +65,8 @@ namespace GraphAnimator
 			edges = new Edges();
 			animStarted = false;
 			animType = -1;
+			weight = -1;
+			prevEdgeHit = null;
 
 			// Declare repaint optimizations.
 			base.SetStyle(
@@ -69,8 +77,7 @@ namespace GraphAnimator
 
 			this.Paint += new PaintEventHandler(Canvas_Paint);
 			inkOverlay = new InkOverlay(this.Handle, true); //attach to form, allow use of mouse for input
-			myRecognizer = new RecognizerContext();
-			inkOverlay.CollectionMode =	CollectionMode.InkOnly;	// do not allow gestures
+			inkOverlay.CollectionMode =	CollectionMode.InkOnly;	// allow ink only, no gestures
 
 			inkOverlay.AutoRedraw =	false; // Dynamic rendering	only; we do	all	the	painting.
 
@@ -81,11 +88,19 @@ namespace GraphAnimator
 			da.Width = 70.0f;
 			inkOverlay.DefaultDrawingAttributes	= da;
 
-
 			inkOverlay.Stroke += new InkCollectorStrokeEventHandler(inkOverlay_Stroke);
 			inkOverlay.StrokesDeleting += new InkOverlayStrokesDeletingEventHandler(inkOverlay_StrokesDeleting);
 			inkOverlay.SelectionMoved += new InkOverlaySelectionMovedEventHandler(inkOverlay_SelectionMoved);
 			inkOverlay.Enabled = true;
+
+			/* Ugly hack to do number recognition on Edge only */
+			myRecognizer = new RecognizerContext();
+			int[] wIds = new int[0];
+			myRecognizer.Strokes = inkOverlay.Ink.CreateStrokes(wIds);
+			/* End of ugly hack */
+			timer = new System.Timers.Timer(TIME_INTERVAL);
+			timer.AutoReset = true;
+			timer.Elapsed +=new ElapsedEventHandler(timer_Elapsed);
 
 		}
 
@@ -276,7 +291,7 @@ namespace GraphAnimator
 			// 
 			this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
 			this.BackColor = System.Drawing.SystemColors.ControlLightLight;
-			this.ClientSize = new System.Drawing.Size(456, 297);
+			this.ClientSize = new System.Drawing.Size(800, 600);
 			this.Controls.Add(this.comboBox1);
 			this.Controls.Add(this.toolBar1);
 			this.HelpButton = true;
@@ -435,6 +450,10 @@ namespace GraphAnimator
 
 		private void Canvas_Paint(object sender, PaintEventArgs e)
 		{
+			foreach(Stroke s in myRecognizer.Strokes)
+			{
+				inkOverlay.Renderer.Draw(e.Graphics,s);
+			}
 			foreach(Edge edge in edges)
 			{
 				edge.Render(this.inkOverlay,e.Graphics);
@@ -512,6 +531,8 @@ namespace GraphAnimator
 		{	
 			if(this.InvokeRequired) return;
 
+			timer.Start();
+
 			Node n = nodes.getTappedNode(e.Stroke);
 			if(n != null)
 			{
@@ -531,45 +552,57 @@ namespace GraphAnimator
 			}
 	
 			if(inkOverlay.EditingMode != InkOverlayEditingMode.Ink) return;
-
-			if(StrokeManager.isClosed(e.Stroke))
+			
+			n = nodes.HitNodeTest(e.Stroke);
+			if(StrokeManager.isClosed(e.Stroke) && n != null && StrokeManager.isStar(e.Stroke))
 			{
-				n = nodes.HitNodeTest(e.Stroke);
-				if(n != null) 
+				AssignStarNode(n);
+			}
+			else if(StrokeManager.isClosed(e.Stroke) && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
+			{
+				Stroke circle = StrokeManager.makeCircle(inkOverlay, e.Stroke);
+				Node circleNode = new Node(circle, false);
+				nodes.Add(circleNode);
+			}
+			else if(StrokeManager.isClosed(e.Stroke) && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
+			{
+				Stroke rect = StrokeManager.makeRect(inkOverlay, e.Stroke);
+				Node rectNode = new Node(rect, true);
+				nodes.Add(rectNode);
+			}
+			else if(!StrokeManager.isClosed(e.Stroke))
+			{
+				Node[] edgeNodes = StrokeManager.ifEdgeGetNodes(e.Stroke, nodes);
+				if(edgeNodes != null)
 				{
-					if(StrokeManager.isStar(e.Stroke))
+					for(int i=0; i<edgeNodes.Length-1; i++)
 					{
-						AssignStarNode(n);
+						if(!Edge.hasEdge(edgeNodes[i],edgeNodes[i+1]))
+						{
+							Edge edge = new Edge(edgeNodes[i],edgeNodes[i+1],inkOverlay);
+							edges.Add(edge);
+						}
+					}
+				}
+			}
+			else
+			{
+				Edge hitEdge = edges.HitEdgeTest(e.Stroke);
+				if(hitEdge != null)
+				{
+					if(prevEdgeHit == null) prevEdgeHit = hitEdge;
+					if(hitEdge.Equals(prevEdgeHit))
+					{
+						myRecognizer.Strokes.Add(CopyStroke(e.Stroke));
 					}
 					else
 					{
-						MessageBox.Show("Can't overlap nodes!", "Stroker");
-					}
-				}
-				else if(e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
-				{
-					Stroke circle = StrokeManager.makeCircle(inkOverlay, e.Stroke);
-					Node circleNode = new Node(circle, false);
-					nodes.Add(circleNode);
-				}
-				else if(e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
-				{
-					Stroke rect = StrokeManager.makeRect(inkOverlay, e.Stroke);
-					Node rectNode = new Node(rect, true);
-					nodes.Add(rectNode);
+						RecognizeWeight();
+						prevEdgeHit = hitEdge;
+						myRecognizer.Strokes.Add(CopyStroke(e.Stroke));
+					}		
 				}
 			}
-
-			else
-			{
-				Node[] edgeNodes = StrokeManager.ifEdgeGetNodes(e.Stroke, nodes);
-				if(edgeNodes != null && !Edge.hasEdge(edgeNodes[0],edgeNodes[1]))
-				{
-					Edge edge = new Edge(edgeNodes[0],edgeNodes[1],inkOverlay);
-					edges.Add(edge);
-				}
-			}
-				
 			e.Stroke.Ink.DeleteStroke(e.Stroke);
 			Invalidate();
 		}
@@ -682,6 +715,40 @@ namespace GraphAnimator
 				toolBarButtonStepBack.Enabled = false;
 				toolBarButtonStepForward.Enabled = false;
 			}
+		}
+
+		private void RecognizeWeight()
+		{
+			if(myRecognizer.Strokes.Count <=0 || prevEdgeHit == null) return;
+			RecognitionStatus status;
+			string s = myRecognizer.Recognize(out status).TopString;
+			try { weight = Int32.Parse(s); }
+			catch
+			{
+				Console.WriteLine("Sorry, "+s+" isn't a number.");
+				weight = -1;
+			}
+			if(weight >= 0)
+			{
+				prevEdgeHit.Weight = weight;
+			}
+			prevEdgeHit = null;
+			weight = -1;
+			myRecognizer.Strokes.Ink.DeleteStrokes(myRecognizer.Strokes);
+			myRecognizer.Strokes.Clear();
+		}
+
+		private Stroke CopyStroke(Stroke s)
+		{
+			Point[] p = s.GetPoints();
+			return s.Ink.CreateStroke(p);
+		}
+
+		private void timer_Elapsed(object sender, ElapsedEventArgs e)
+		{
+			RecognizeWeight();
+			timer.Stop();
+			Invalidate();
 		}
 	}
 }

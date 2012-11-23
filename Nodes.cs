@@ -103,7 +103,7 @@ namespace GraphAnimator
 
 		public Node getTappedNode(Stroke s)
 		{
-			if(s.PacketCount > 10) return null;
+			if(s.PacketCount > 25) return null;
 			Point[] points = {s.GetPoint(0),s.GetPoint(s.PacketCount-1)};
 			foreach(Node n in list)
 			{

@@ -172,6 +172,23 @@ namespace GraphAnimator
 			stepCount = 0;
 		}
 
+		private void stepBack1()
+		{
+			
+		}
+		private void stepBack2()
+		{
+
+		}
+		private void stepBack3()
+		{
+
+		}
+		private void stepBack4()
+		{
+
+		}
+
 
 		#endregion
 
@@ -226,7 +243,15 @@ namespace GraphAnimator
 
 		public override void StepBack()
 		{
-
+			if(stepCount == 0)
+				stepBack1();
+			else if (stepCount == 1)
+				stepBack2();
+			else if(stepCount == 2)
+				stepBack3();
+			else if(stepCount == 3)
+				stepBack4();
+			c.Invalidate();
 		}
 		#endregion
 

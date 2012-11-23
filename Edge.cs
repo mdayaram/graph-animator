@@ -25,7 +25,7 @@ namespace GraphAnimator
 			Point[] p = {a.CenterPoint,b.CenterPoint};
 			this.stroke = i.Ink.CreateStroke(p);
 		}
-		public Edge(Node a, Node b, InkOverlay i) : this(a,b,i,Edge.DEFAULT_WEIGHT++) {}
+		public Edge(Node a, Node b, InkOverlay i) : this(a,b,i,Edge.DEFAULT_WEIGHT) {}
 
 		#region Accessor and Mutator Methods
 		public Node NodeA

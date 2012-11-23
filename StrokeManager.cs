@@ -12,8 +12,8 @@ namespace GraphAnimator
 							CIRCLE_TOLERANCE = 700,
 							RECT_TOLERANCE = 1500,
 							CLOSED_TOLERANCE = 1000,
-							R_MIN = 100,
-							C_MIN = 50;
+							R_MIN = 1000,
+							C_MIN = 500;
 		public StrokeManager(){	}
 		
 		#region Node Analysis Methods
@@ -76,6 +76,8 @@ namespace GraphAnimator
 			}
 			return dist;
 		}
+
+		#region Average function
 		public static double Avg(double[] arr)
 		{
 			double sum = 0;
@@ -104,7 +106,7 @@ namespace GraphAnimator
 			double[] arr = {(double)a, (double)b};
 			return Avg(arr);
 		}
-
+		#endregion
 
 		#region Make Circular and Rectangular Strokes
 		public static Stroke makeCircle(InkOverlay i, Stroke s)
@@ -145,26 +147,23 @@ namespace GraphAnimator
 		#region Edge Helper Methods
 		public static Node[] ifEdgeGetNodes(Stroke s, Nodes nodes)
 		{
-			Point[] sPoints = {s.GetPoint(0),s.GetPoint(s.PacketCount-1)};
+			Point[] sPoints = s.GetPoints();
 			Nodes strokeHitNodes = new Nodes();
-			foreach(Node n in nodes)
+			for(int i=0; i<sPoints.Length; i++)
 			{
-				Rectangle r = n.Stroke.GetBoundingBox();
-				
-				if(s.HitTest(n.CenterPoint,Math.Max(r.Width/2, r.Height/2)))
+				foreach(Node n in nodes)
 				{
-					if(r.Contains(sPoints[0]))
+					Rectangle r = n.Stroke.GetBoundingBox();
+				
+					if(s.HitTest(n.CenterPoint,Math.Max(r.Width/2, r.Height/2)) && r.Contains(sPoints[i]))
 					{
 						strokeHitNodes.Add(n);
-					}
-					else if(r.Contains(sPoints[1]))
-					{
-						strokeHitNodes.Add(n);
+						break;
 					}
 				}
 			}
 			Node[] nodesHit = strokeHitNodes.ToArray();
-			if(nodesHit.Length != 2)
+			if(nodesHit.Length < 2)
 			{
 				return null;
 			}
