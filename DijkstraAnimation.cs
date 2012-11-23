@@ -30,18 +30,18 @@ namespace GraphAnimator
 		private Node popNode;  //Node that has just been popped.
 		private int stepCount;
 		
-		public DijkstraAnimation(Graph g, Canvas c) : base()
+		public DijkstraAnimation(Canvas c) : base()
 		{
 			popped = new Nodes();
 			pushing = new Nodes();
 			incomingEdge = new Hashtable();
 			proposedWeight = new Hashtable();
 			pq = new BinaryPriorityQueue(Node.sortAscending());
-			Initialize(g);
+			graph = new Graph(); //empty graph until initialized.
 			this.c = c;
 			t = new Thread(new ThreadStart(Run));
 		}
-		private void Initialize(Graph g)
+		public override void Initialize(Graph g)
 		{
 			graph = g;
 			pq.Clear();
@@ -56,10 +56,10 @@ namespace GraphAnimator
 				incomingEdge.Add(n,null);
 				proposedWeight.Add(n,int.MaxValue);
 			}
-			graph.Home.Distance = 0;
+			//graph.Home.Distance = 0;
 			t = new Thread(new ThreadStart(Run));
 			stepCount = 0;
-			pq.Push(graph.Home);
+			//pq.Push(graph.Home);
 		}
 
 		#region Random Helper Methods
@@ -116,6 +116,11 @@ namespace GraphAnimator
 		 */
 		private void step1()
 		{
+			if(!pq.Contains(graph.Home) && !popped.Contains(graph.Home))
+			{
+				graph.Home.Distance = 0;
+				pq.Add(graph.Home);
+			}
 			updateText();
 			if(pq.Count <= 0) 
 			{
@@ -276,6 +281,18 @@ namespace GraphAnimator
 				stepBack4();
 			c.Invalidate();*/
 		}
+
+		public override string ToString()
+		{
+			return "Dijkstra's";
+		}
+
+		public override bool isPlayable()
+		{
+			return graph.Home != null && graph.Destination != null && graph.Nodes.Length() > 0;
+		}
+
+
 
 		#endregion
 

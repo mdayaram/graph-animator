@@ -22,10 +22,10 @@ namespace GraphAnimator
 		private string PATH = Directory.GetCurrentDirectory();
 		private const int TIME_INTERVAL = 1000;  //The time interval used to recognize Edge weights
 		private Graph graph;
+		private ArrayList animations;
 		private Animation anim;
 		private RecognizerContext myRecognizer;
 		private bool animStarted;
-		private int animType;
 		//*****Used for Edge Recognition*********
 		private int weight;
 		private Edge prevEdgeHit;
@@ -50,6 +50,7 @@ namespace GraphAnimator
 		private System.Windows.Forms.ToolBarButton toolBarButtonStepForward;
 		private System.Windows.Forms.ImageList imageList1;
 		private System.Windows.Forms.ComboBox comboBox1;
+		private System.Windows.Forms.ToolBarButton helpButton;
 		private System.Windows.Forms.MainMenu mainMenu1;
 		#endregion
 
@@ -60,9 +61,9 @@ namespace GraphAnimator
 			InitializeComponent();
 			
 			graph = new Graph();
+			animations = new ArrayList();
 			animStarted = false;
 			weight = -1;
-			animType = -1;  //No animation
 			prevEdgeHit = null;
 
 			// Declare repaint optimizations.
@@ -143,6 +144,7 @@ namespace GraphAnimator
 			this.toolBarButtonStepForward = new System.Windows.Forms.ToolBarButton();
 			this.imageList1 = new System.Windows.Forms.ImageList(this.components);
 			this.comboBox1 = new System.Windows.Forms.ComboBox();
+			this.helpButton = new System.Windows.Forms.ToolBarButton();
 			this.SuspendLayout();
 			// 
 			// imgMenu
@@ -165,7 +167,10 @@ namespace GraphAnimator
 																						this.toolBarButtonPlayPause,
 																						this.toolBarButtonStop,
 																						this.toolBarButtonStepBack,
-																						this.toolBarButtonStepForward});
+																						this.toolBarButtonStepForward,
+																						this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,
+																						this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,this.toolBarButton9,
+																						this.helpButton});
 			this.toolBar1.DropDownArrows = true;
 			this.toolBar1.ImageList = this.imageList1;
 			this.toolBar1.Location = new System.Drawing.Point(0, 0);
@@ -243,6 +248,12 @@ namespace GraphAnimator
 			this.toolBarButtonStepForward.ToolTipText = "Step Forward";
 			this.toolBarButtonStepForward.Enabled = true;
 			// 
+			// helpButton
+			// 
+			this.helpButton.ImageIndex = 12;
+			this.helpButton.ToolTipText = "Help";
+			this.helpButton.Enabled = true;
+			// 
 			// imageList1
 			// 
 			this.imageList1.ImageSize = new System.Drawing.Size(16, 16);
@@ -255,7 +266,6 @@ namespace GraphAnimator
 			this.comboBox1.Size = new System.Drawing.Size(96, 21);
 			this.comboBox1.TabIndex = 1;
 			this.comboBox1.Text = "Algorithm";
-			this.comboBox1.Items.Add("Dijkstra");  //const DIJKSTRA = 0;
 
 			this.comboBox1.TextChanged += new EventHandler(comboBox1_TextChanged);
 			//
@@ -273,6 +283,7 @@ namespace GraphAnimator
 			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stop.png"));
 			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stepb.png"));
 			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\stepf.png"));
+			imageList1.Images.Add(Image.FromFile(PATH+"\\imgs\\help.png"));
 			//
 			// ToolBar Button Image Indexing
 			//
@@ -287,6 +298,7 @@ namespace GraphAnimator
 			this.toolBarButtonStop.ImageIndex = 9;
 			this.toolBarButtonStepBack.ImageIndex = 10;
 			this.toolBarButtonStepForward.ImageIndex = 11;
+			this.helpButton.ImageIndex = 12;
 			// 
 			// Canvas
 			// 
@@ -309,7 +321,9 @@ namespace GraphAnimator
 		[STAThread]
 		static void Main() 
 		{
-			Application.Run(new Canvas());
+			Canvas c = new Canvas();
+			c.AddAnimation(new DijkstraAnimation(c));
+			Application.Run(c);
 		}
 
 
@@ -320,6 +334,10 @@ namespace GraphAnimator
 			graph.Clear();
 			this.inkOverlay.Ink.DeleteStrokes(inkOverlay.Ink.Strokes);
 			penButton(sender, e);
+			if(anim != null) anim.Stop();
+			anim = null;
+			comboBox1.Text = "Algorithm";
+			togglePlayPause(PLAY);
 			Invalidate();
 		}
 		private void openButton(object sender, System.EventArgs e)
@@ -344,14 +362,19 @@ namespace GraphAnimator
 
 		private void stepBackButton(object sender, System.EventArgs e)
 		{
-			if(anim == null) return;
+			if(anim == null && !anim.isPlayable()) return;
+			if(!animStarted)
+			{
+				NewAnimation();
+				animStarted = true;
+			}
 			anim.StepBack();
 			Invalidate();
 		}
 
 		private void stepForwardButton(object sender, System.EventArgs e)
 		{
-			if(anim == null) return;
+			if(anim == null && !anim.isPlayable()) return;
 			anim.Step();
 			animStarted = true;
 			Invalidate();
@@ -360,12 +383,10 @@ namespace GraphAnimator
 		//Starts a new animation  depending on what the animType is
 		private void NewAnimation()
 		{
-			switch (animType)
-			{
-				case DIJKSTRA:
-					anim = new DijkstraAnimation(graph,this);
-					break;
-			}
+			if(anim == null)
+				MessageBox.Show("Please select an algorithm from the drop down box.");
+			else 
+				anim.Initialize(graph);
 		}
 
 		/* Starts the animation if it hasn't started yet, 
@@ -374,7 +395,14 @@ namespace GraphAnimator
 		 */
 		private void playPauseButton(object sender, System.EventArgs e)
 		{
-			if(!isPlayable())
+			if(!animStarted)
+			{
+				NewAnimation();
+			}
+
+			if(anim == null) return;
+
+			if(!anim.isPlayable())
 			{
 				MessageBox.Show("Some conditions to start the animation are lacking.\n"+
 					"Please make sure you have assigned home and destination\n"+
@@ -382,13 +410,7 @@ namespace GraphAnimator
 					"the drop down menu.");
 				return;
 			}
-
-			if(!animStarted)
-			{
-				NewAnimation();
-				animStarted = true;
-			}
-
+			animStarted = true;
 			if(toolBarButtonPlayPause.ImageIndex == PLAY)
 				anim.Play();
 			else
@@ -420,7 +442,7 @@ namespace GraphAnimator
 		 */
 		private void stopButton(object sender, System.EventArgs e)
 		{
-			if(!isPlayable()) return;
+			if(!anim.isPlayable()) return;
 			anim.Stop();
 			animStarted = false;
 			togglePlayPause(PLAY);
@@ -661,20 +683,21 @@ namespace GraphAnimator
 				stepBackButton(sender,e);
 			else if(e.Button.Equals(toolBarButtonStepForward))
 				stepForwardButton(sender,e);
+			else if(e.Button.Equals(helpButton))
+				HelpBrowser.run(PATH+"\\help.html");
 
 		}
 		#endregion
 
-		//Once more animations are added, they'd be placed here.
+		//Select animation from comboBox
 		private void comboBox1_TextChanged(object sender, EventArgs e)
 		{
-			if(comboBox1.Text.Equals("Dijkstra"))
-			{	
-				animType = comboBox1.Items.IndexOf("Dijkstra");
-			}
-			else
+			for(int i=0; i<animations.Count; i++)
 			{
-				animType = -1;
+				if(comboBox1.Text.Equals(animations[i].ToString()))
+				{
+					anim = animations[i] as Animation;
+				}
 			}
 		}
 
@@ -724,10 +747,12 @@ namespace GraphAnimator
 		/* Can only play animation if the home and destination nodes are set and 
 		 * there are nodes in the graph
 		 */
-		private bool isPlayable()
+
+		public void AddAnimation(Animation anim)
 		{
-			return graph.Home != null && graph.Destination != null && 
-				graph.Nodes.Length() > 0 && animType >= 0;
+			this.comboBox1.Items.Add(anim.ToString());
+			animations.Add(anim);
 		}
+
 	}
 }

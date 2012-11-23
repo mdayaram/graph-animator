@@ -7,6 +7,10 @@ namespace GraphAnimator
 	{
 		public Animation(){}
 
+		public abstract void Initialize(Graph g);
+
+		public abstract bool isPlayable();
+
 		public abstract void Step();
 
 		public abstract void Play();
@@ -17,5 +21,6 @@ namespace GraphAnimator
 
 		public abstract void StepBack();
 
+		public abstract override string ToString();
 	}
 }
