@@ -10,7 +10,6 @@ namespace GraphAnimator
 	public class Node
 	{
 		public static Color DEFAULT = Color.AntiqueWhite;
-
 		public static Color TEXT_DEFAULT = Color.Black;
 		
 		private int id;
@@ -18,27 +17,25 @@ namespace GraphAnimator
 		private Point centerPoint;
 		private string text;
 		private int distance;
-		private int proposed;
-		private Edge incomingEdge;
+		private bool isRect;
 		private Color fillColor, textColor;
 		private Edges edges;
-		private bool isRect;
 
-		public Node(Stroke stroke, bool isRect)
+		public Node(Stroke stroke)
 		{
 			this.stroke = stroke;
 			this.id = stroke.Id;
 			Rectangle r = stroke.GetBoundingBox();
+			//Determine whether this node is a rectangle or not
+			isRect = r.Width*Math.PI < StrokeManager.StrokeLength(stroke);
 			centerPoint = new Point(r.X + r.Width/2, r.Y + r.Height/2);
 			fillColor = DEFAULT;
-			this.isRect = isRect;
 			edges = new Edges();
 			textColor = TEXT_DEFAULT;
 			text = "";
+			//Set initial distance to infinity (max int)
 			distance = Int32.MaxValue;
-			incomingEdge = null;
 		}
-		public Node(Stroke stroke) : this(stroke, false) {}
 
 		#region Accessor and Mutators
 		public int Id
@@ -63,14 +60,15 @@ namespace GraphAnimator
 			get{return centerPoint;}
 			set
 			{
+				//When setting a new center point, must make new edges.
 				centerPoint = value;
-				foreach(Edge e in this.edges)
+				for(int i=0; i<edges.Length(); i++)
 				{
 					Point[] p = new Point[2];
 					p[0] = centerPoint;
-					p[1] = Node.GetOther(this,e).CenterPoint;
-					e.Stroke.Ink.DeleteStroke(e.Stroke);
-					e.Stroke = stroke.Ink.CreateStroke(p);
+					p[1] = Node.GetOther(this,edges[i]).CenterPoint;
+					edges[i].Stroke.Ink.DeleteStroke(edges[i].Stroke);
+					edges[i].Stroke = stroke.Ink.CreateStroke(p);
 				}
 			}
 		}
@@ -89,16 +87,6 @@ namespace GraphAnimator
 			get{return distance;}
 			set{distance = value;}
 		}
-		public int Proposed
-		{
-			get{return proposed;}
-			set{proposed = value;}
-		}
-		public Edge Incoming
-		{
-			get{return incomingEdge;}
-			set{incomingEdge = value;}
-		}
 		#endregion
 
 		public override bool Equals(object obj)
@@ -110,10 +98,8 @@ namespace GraphAnimator
 
 		public void Render(InkOverlay i, Graphics g)
 		{
-			//if(stroke.Deleted == true) return;
-			Rectangle rect = stroke.GetBoundingBox();
-			rect = StrokeManager.InkSpaceToPixelRect(i, g, rect);
-
+			if(stroke.Deleted == true) return;
+			Rectangle rect = StrokeManager.InkSpaceToPixelRect(i, g, stroke.GetBoundingBox());
 			if(isRect)
 				g.FillRectangle(new SolidBrush(fillColor), rect);
 			else
@@ -127,12 +113,14 @@ namespace GraphAnimator
 			g.DrawString(text, new Font("Arial",10), new SolidBrush(textColor), p[0]);
 		}
 
+		//Get the node attached to Edge e that isn't Node n
 		public static Node GetOther(Node n, Edge e)
 		{
 			if(n == null || !n.Edges.Contains(e)) return null;
 			return (n.Equals(e.NodeB)) ? e.NodeA : e.NodeB;
 		}
 
+		//Used for Priority Queue
 		#region IComparer Methods and Classes
 		public static IComparer sortAscending()
 		{      

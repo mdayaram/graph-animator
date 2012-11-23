@@ -14,25 +14,23 @@ namespace GraphAnimator
 
 	public class Canvas : System.Windows.Forms.Form
 	{
-		private const int PLAY = 7, PAUSE = 8,
-						  DIJKSTRA = 0;
+		private const int PLAY = 7, PAUSE = 8,  //Used for toggling Play/Pause Button
+						  DIJKSTRA = 0;  //Animation Constant used for Index in comboBox
 
 		private System.ComponentModel.IContainer components;
 		private InkOverlay inkOverlay;
 		private string PATH = Directory.GetCurrentDirectory();
-		private const int TIME_INTERVAL = 1000;
-		private Nodes nodes;
-		private Edges edges;
-		private Node home, destination;
+		private const int TIME_INTERVAL = 1000;  //The time interval used to recognize Edge weights
+		private Graph graph;
 		private Animation anim;
 		private RecognizerContext myRecognizer;
 		private bool animStarted;
 		private int animType;
-		//**********************
+		//*****Used for Edge Recognition*********
 		private int weight;
 		private Edge prevEdgeHit;
 		private System.Timers.Timer edgeTimer;
-		//**********************
+		//***************************************
 
 		#region Menu Items
 		private System.Windows.Forms.ImageList imgMenu;
@@ -61,11 +59,10 @@ namespace GraphAnimator
 
 			InitializeComponent();
 			
-			nodes = new Nodes();
-			edges = new Edges();
+			graph = new Graph();
 			animStarted = false;
 			weight = -1;
-			animType = -1;
+			animType = -1;  //No animation
 			prevEdgeHit = null;
 
 			// Declare repaint optimizations.
@@ -82,27 +79,29 @@ namespace GraphAnimator
 			inkOverlay.AutoRedraw =	false; // Dynamic rendering	only; we do	all	the	painting.
 
 			DrawingAttributes da = new DrawingAttributes();
-			da.AntiAliased = true;
+			da.AntiAliased = true;  //Makes everything nice and smooth lookin'
 			da.Transparency = 0;
 			da.PenTip = Microsoft.Ink.PenTip.Ball;
 			da.Width = 70.0f;
 			inkOverlay.DefaultDrawingAttributes	= da;
 
+			//Triggered at each pen stroke
 			inkOverlay.Stroke += new InkCollectorStrokeEventHandler(inkOverlay_Stroke);
+			//Triggered at each eraser stroke
 			inkOverlay.StrokesDeleting += new InkOverlayStrokesDeletingEventHandler(inkOverlay_StrokesDeleting);
+			//Triggered when a selection of strokes is moved
 			inkOverlay.SelectionMoved += new InkOverlaySelectionMovedEventHandler(inkOverlay_SelectionMoved);
+			//Triggered when a selection of strokes is resized
 			inkOverlay.SelectionResized +=new InkOverlaySelectionResizedEventHandler(inkOverlay_SelectionResized);
 			inkOverlay.Enabled = true;
 
-			/* Ugly hack to do number recognition on Edge only */
 			myRecognizer = new RecognizerContext();
-			int[] wIds = new int[0];
-			myRecognizer.Strokes = inkOverlay.Ink.CreateStrokes(wIds);
-			/* End of ugly hack */
+			myRecognizer.Strokes = inkOverlay.Ink.CreateStrokes();
 
 			edgeTimer = new System.Timers.Timer(TIME_INTERVAL);
 			edgeTimer.AutoReset = true;
 			edgeTimer.Elapsed +=new ElapsedEventHandler(edgeTimer_Elapsed);
+			edgeTimer.Enabled = true;
 
 		}
 
@@ -318,10 +317,7 @@ namespace GraphAnimator
 
 		private void newButton(object sender, System.EventArgs e)
 		{
-			nodes.Clear();
-			edges.Clear();
-			home = null;
-			destination = null;
+			graph.Clear();
 			this.inkOverlay.Ink.DeleteStrokes(inkOverlay.Ink.Strokes);
 			penButton(sender, e);
 			Invalidate();
@@ -342,9 +338,7 @@ namespace GraphAnimator
 		{
 			inkOverlay.Enabled = false;
 			inkOverlay.Dispose();
-			nodes.Clear();
-			edges.Clear();
-			home = destination = null;
+			graph.Clear();
 			this.Dispose();
 		}
 
@@ -359,19 +353,25 @@ namespace GraphAnimator
 		{
 			if(anim == null) return;
 			anim.Step();
+			animStarted = true;
 			Invalidate();
 		}
 
+		//Starts a new animation  depending on what the animType is
 		private void NewAnimation()
 		{
 			switch (animType)
 			{
 				case DIJKSTRA:
-					anim = new DijkstraAnimation(nodes, home, destination,this);
+					anim = new DijkstraAnimation(graph,this);
 					break;
 			}
 		}
 
+		/* Starts the animation if it hasn't started yet, 
+		 * if it has, then it pauses the animation.  If animation 
+		 * is paused, then it plays it again from the place it stopped.
+		 */
 		private void playPauseButton(object sender, System.EventArgs e)
 		{
 			if(!isPlayable())
@@ -397,6 +397,7 @@ namespace GraphAnimator
 			togglePlayPause();
 		}
 
+		//Toggles the image on the play/pause button
 		private void togglePlayPause()
 		{
 			switch(toolBarButtonPlayPause.ImageIndex)
@@ -415,6 +416,8 @@ namespace GraphAnimator
 			toolBarButtonPlayPause.ImageIndex = i;
 		}
 
+		/* Stops an animation and returns the program into drawing state.
+		 */
 		private void stopButton(object sender, System.EventArgs e)
 		{
 			if(!isPlayable()) return;
@@ -446,6 +449,10 @@ namespace GraphAnimator
 			setEditingMode(InkOverlayEditingMode.Select);
 		}
 
+		/* Sets the editing mode to any of the three,
+		 * selection, pen, or eraser.  Also initializes the 
+		 * selection strokes.
+		 */
 		private void setEditingMode(InkOverlayEditingMode em)
 		{
 			if(inkOverlay.EditingMode == em) return;
@@ -457,113 +464,36 @@ namespace GraphAnimator
 
 		private void Canvas_Paint(object sender, PaintEventArgs e)
 		{
-			foreach(Edge edge in edges)
-			{
-				edge.Render(this.inkOverlay,e.Graphics);
-			}
-			foreach(Node n in nodes)
-			{
-				n.Render(this.inkOverlay, e.Graphics);
-				if(n.Equals(home))
-				{
-					e.Graphics.DrawString("*",new Font("Arial",30),new SolidBrush(Color.Green),StrokeManager.InkSpaceToPixelRect(inkOverlay, e.Graphics,n.Stroke.GetBoundingBox()));
-				}
-				else if(n.Equals(destination))
-				{
-					e.Graphics.DrawString("X",new Font("Arial",14,FontStyle.Bold) ,new SolidBrush(Color.Red),StrokeManager.InkSpaceToPixelRect(inkOverlay, e.Graphics,n.Stroke.GetBoundingBox()));
-				}
-			}
-			if(myRecognizer.Strokes.Count <= 0) return;
-			foreach(Stroke s in myRecognizer.Strokes)
-			{
-				try
-				{
-					inkOverlay.Renderer.Draw(e.Graphics,s);
-				}
-				catch(System.Runtime.InteropServices.COMException err)
-				{
-					MessageBox.Show("Dammit, not again!\n\n"+ err.ToString());
-				}
-			}
-		}
-		#region Node and Edge Handlers
-		private void AssignStarNode(Node n)
-		{
-			if(n.Equals(destination))
-			{
-				destination = null;
-				home = n;
-			}
-			else if(home == null)
-			{
-				home = n;
-			}
-			else if(destination == null)
-			{
-				destination = n;
-			}
-			else
-			{
+			graph.Render(inkOverlay, e.Graphics);
 
-				Node tmp = destination;
-				destination = n;
-				home = tmp;
-			}
-		}
-
-		private void removeNode(Node n)
-		{
-			
-			nodes.Remove(n);
-			foreach(Edge edge in n.Edges)
+			for(int i=0; i<myRecognizer.Strokes.Count; i++)
 			{
-				removeEdge(edge, n);
+				inkOverlay.Renderer.Draw(e.Graphics,myRecognizer.Strokes[i]);
 			}
-			n.Edges.Clear();
-			n.Stroke.Ink.DeleteStroke(n.Stroke);
-			Invalidate();
 		}
-		private void removeEdge(Edge e)
-		{
-			removeEdge(e, null);
-			Invalidate();
-		}
-		private void removeEdge(Edge e, Node keepNode)
-		{
-			edges.Remove(e);
-			Node n = Node.GetOther(keepNode,e);
-			if(n != null)
-			{
-				n.Edges.Remove(e);
-			}
-			else
-			{
-				e.NodeA.Edges.Remove(e);
-				e.NodeB.Edges.Remove(e);
-			}
-			e.Stroke.Ink.DeleteStroke(e.Stroke);
-		}
-		#endregion
-
 
 		#region Stroke Event Handlers
 
 		private void inkOverlay_Stroke(object sender, InkCollectorStrokeEventArgs e)
 		{	
 			if(this.InvokeRequired) return;
-
-			//edgeTimer.BeginInit();
+			
+			//in effect, this is reseting the timer to start from the beginning.
+			edgeTimer.Stop();
 			edgeTimer.Start();
-
-			Node n = nodes.getTappedNode(e.Stroke);
+			
+			//Check if the stroke was a tap, and if it was, get the node it tapped.
+			Node n = StrokeManager.TappedNode(e.Stroke,graph);
 			if(n != null)
 			{
+				//If its eraser mode, delete it.
 				if(inkOverlay.EditingMode == InkOverlayEditingMode.Delete)
 				{
-					removeNode(n);
+					graph.Remove(n);
 				}
 				else
 				{
+					//Any other mode, select it and change to selection mode
 					int[] ids = {n.Stroke.Id};
 					selectionButton(sender, e);
 					inkOverlay.Selection = e.Stroke.Ink.CreateStrokes(ids);
@@ -572,56 +502,83 @@ namespace GraphAnimator
 				Invalidate();
 				return;
 			}
-	
+			
+			//The following code is for pen mode only strokes
 			if(inkOverlay.EditingMode != InkOverlayEditingMode.Ink) return;
 			
-			n = nodes.HitNodeTest(e.Stroke);
+			//If a stroke is inside a node, store it in n
+			n = StrokeManager.HitNodeTest(e.Stroke,graph);
+
+			//If the stroke is closed and it's a start, assign a home or destination
 			if(StrokeManager.isClosed(e.Stroke) && n != null && StrokeManager.isStar(e.Stroke))
 			{
-				AssignStarNode(n);
+				graph.AssignNode(n);
+				RecognizeWeight();  //Attempt at recognizing weight is made after every stroke.
 			}
+			//If the stroke is closed and it is not enclosed in a node and is a circle, make a circular node
 			else if(StrokeManager.isClosed(e.Stroke) && n==null && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
 			{
 				Stroke circle = StrokeManager.makeCircle(inkOverlay, e.Stroke);
-				Node circleNode = new Node(circle, false);
-				nodes.Add(circleNode);
+				Node circleNode = new Node(circle);
+				graph.Add(circleNode);
+				RecognizeWeight();
 			}
+			//If the stroke is close and it is not enclosed in a node and is a rectangle, make a rectangular node
 			else if(StrokeManager.isClosed(e.Stroke) && n==null && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
 			{
 				Stroke rect = StrokeManager.makeRect(inkOverlay, e.Stroke);
-				Node rectNode = new Node(rect, true);
-				nodes.Add(rectNode);
+				Node rectNode = new Node(rect);
+				graph.Add(rectNode);
+				RecognizeWeight();
 			}
+			//if the stroke isn't closed, then it is an edge.  
 			else if(!StrokeManager.isClosed(e.Stroke))
 			{
-				Node[] edgeNodes = StrokeManager.ifEdgeGetNodes(e.Stroke, nodes);
-				if(edgeNodes != null)
+				//Get all the nodes hit by this stroke and create edges for them
+				Nodes edgeNodes = StrokeManager.ifEdgeGetNodes(e.Stroke, graph);
+				if(edgeNodes != null && !StrokeManager.isScratchOut(e.Stroke))
 				{
-					for(int i=0; i<edgeNodes.Length-1; i++)
+					for(int i=0; i<edgeNodes.Length()-1; i++)
 					{
 						if(!Edge.hasEdge(edgeNodes[i],edgeNodes[i+1]))
 						{
 							Edge edge = new Edge(edgeNodes[i],edgeNodes[i+1],inkOverlay);
-							edges.Add(edge);
+							graph.Add(edge);
 						}
 					}
 				}
+				else if(StrokeManager.isScratchOut(e.Stroke))
+				{
+					ArrayList objs = StrokeManager.HitObjects(e.Stroke,graph);
+					for(int i=0; i<objs.Count; i++)
+					{
+						graph.Remove(objs[i]);
+					}
+				}
+
+				RecognizeWeight();
 			}
 			else
 			{
-				Edge hitEdge = edges.HitEdgeTest(e.Stroke);
+				//if all of the above fails, then the stroke is considered for edge weights
+				Edge hitEdge = StrokeManager.HitEdgeTest(e.Stroke,graph);
 				if(hitEdge != null)
 				{
+					/* if the edge hit is the same as the previous one, 
+					 * accumulate strokes for it before recognizing,
+					 * if it's a different edge, then recognize and add this
+					 * stroke to the new edge.
+					 */
 					if(prevEdgeHit == null) prevEdgeHit = hitEdge;
 					if(hitEdge.Equals(prevEdgeHit))
 					{
-						myRecognizer.Strokes.Add(CopyStroke(e.Stroke));
+						myRecognizer.Strokes.Add(StrokeManager.CopyStroke(e.Stroke));
 					}
 					else
 					{
 						RecognizeWeight();
 						prevEdgeHit = hitEdge;
-						myRecognizer.Strokes.Add(CopyStroke(e.Stroke));
+						myRecognizer.Strokes.Add(StrokeManager.CopyStroke(e.Stroke));
 					}		
 				}
 			}
@@ -633,46 +590,33 @@ namespace GraphAnimator
 		{
 			if(this.InvokeRequired) return;
 			Strokes strokes = e.StrokesToDelete;
-			foreach(Stroke s in strokes)
+			//Remove the corresponding nodes and edges for each stroke
+			for(int i=0; i<strokes.Count; i++)
 			{   
-				if(StrokeManager.isClosed(s,0))
+				if(StrokeManager.isClosed(strokes[i],0))
 				{
-					Node n = nodes.getNode(s);
-					removeNode(n);
-					if(n.Equals(home)) home = null;
-					if(n.Equals(destination)) destination = null;
+					graph.Remove(graph.Nodes.getNode(strokes[i]));
 				}
 				else
 				{
-					foreach(Edge edge in edges)
-					{
-						if(edge.strokeEquals(s))
-						{	
-							removeEdge(edge);
-							break;
-						}
-					}
+					graph.Remove(graph.Edges.getEdge(strokes[i]));
 				}
 			}
 			Invalidate();
 		}
-
+		
+		/* For any selection movement or resizing we need 
+		 * to fix the node center points.
+		 */
 		private void inkOverlay_SelectionMoved(object sender, InkOverlaySelectionMovedEventArgs e)
 		{
 			if(this.InvokeRequired) return;
 						
-			Node[] selectedNodes = nodes.getNodes(inkOverlay.Selection);
-			foreach(Node n in selectedNodes)
+			Nodes selectedNodes = graph.Nodes.getNodes(inkOverlay.Selection);
+			for(int i=0; i<selectedNodes.Length(); i++)
 			{
-				Rectangle r = n.Stroke.GetBoundingBox();
-				n.CenterPoint = new Point(r.X+r.Width/2, r.Y+r.Height/2);
-			}
-			Edge[] selectedEdges = edges.getEdges(inkOverlay.Selection);
-			foreach(Edge edge in selectedEdges)
-			{
-				Point[] p = {edge.NodeA.CenterPoint,edge.NodeB.CenterPoint};
-				edge.Stroke.Ink.DeleteStroke(edge.Stroke);
-				edge.Stroke = edge.Stroke.Ink.CreateStroke(p);
+				Rectangle r = selectedNodes[i].Stroke.GetBoundingBox();
+				selectedNodes[i].CenterPoint = new Point(r.X+r.Width/2, r.Y+r.Height/2);
 			}
 			Invalidate();
 		}
@@ -680,18 +624,11 @@ namespace GraphAnimator
 		{
 			if(this.InvokeRequired) return;
 						
-			Node[] selectedNodes = nodes.getNodes(inkOverlay.Selection);
-			foreach(Node n in selectedNodes)
+			Nodes selectedNodes = graph.Nodes.getNodes(inkOverlay.Selection);
+			for(int i=0; i<selectedNodes.Length(); i++)
 			{
-				Rectangle r = n.Stroke.GetBoundingBox();
-				n.CenterPoint = new Point(r.X+r.Width/2, r.Y+r.Height/2);
-			}
-			Edge[] selectedEdges = edges.getEdges(inkOverlay.Selection);
-			foreach(Edge edge in selectedEdges)
-			{
-				Point[] p = {edge.NodeA.CenterPoint,edge.NodeB.CenterPoint};
-				edge.Stroke.Ink.DeleteStroke(edge.Stroke);
-				edge.Stroke = edge.Stroke.Ink.CreateStroke(p);
+				Rectangle r = selectedNodes[i].Stroke.GetBoundingBox();
+				selectedNodes[i].CenterPoint = new Point(r.X+r.Width/2, r.Y+r.Height/2);
 			}
 			Invalidate();
 		}
@@ -728,7 +665,7 @@ namespace GraphAnimator
 		}
 		#endregion
 
-
+		//Once more animations are added, they'd be placed here.
 		private void comboBox1_TextChanged(object sender, EventArgs e)
 		{
 			if(comboBox1.Text.Equals("Dijkstra"))
@@ -741,12 +678,16 @@ namespace GraphAnimator
 			}
 		}
 
+		//Attempt to recognize an edge weight
 		private void RecognizeWeight()
 		{
 			edgeTimer.Stop();
+			//If there are no strokes in the recognizer or no edge hit, return
 			if(myRecognizer.Strokes.Count <=0 || prevEdgeHit == null) return;
 			RecognitionStatus status;
+			//Recognize the contents of the recognizer
 			string s = myRecognizer.Recognize(out status).TopString;
+			//Replace all letters that look like numbers with their appropriate numbers
 			s = s.Replace("l","1");
 			s = s.Replace("I","1");
 			s = s.Replace("|","1");
@@ -756,6 +697,7 @@ namespace GraphAnimator
 			s = s.Replace("S","5");
 			s = s.Replace("o","0");
 			s = s.Replace("O","0");
+			//Attempt to parse into a number
 			try 
 			{ 
 				weight = Int32.Parse(s); 
@@ -772,23 +714,20 @@ namespace GraphAnimator
 			myRecognizer.Strokes.Clear();
 		}
 
-		private Stroke CopyStroke(Stroke s)
-		{
-			Point[] p = s.GetPoints();
-			return s.Ink.CreateStroke(p);
-		}
-
 		private void edgeTimer_Elapsed(object sender, ElapsedEventArgs e)
 		{
 			RecognizeWeight();
+			edgeTimer.Stop();
 			Invalidate();
 		}
 
+		/* Can only play animation if the home and destination nodes are set and 
+		 * there are nodes in the graph
+		 */
 		private bool isPlayable()
 		{
-			return home != null && destination != null && 
-				nodes.Length() > 0 && animType >= 0;
+			return graph.Home != null && graph.Destination != null && 
+				graph.Nodes.Length() > 0 && animType >= 0;
 		}
-
 	}
 }

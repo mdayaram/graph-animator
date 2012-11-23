@@ -13,6 +13,7 @@ namespace GraphAnimator
 		
 		public static int TIME_STEP = 1500;
 		public static string INFINITY = "Inf";
+		//Color codes for different parts.
 		public static Color INQUEUE_N = Color.Salmon,
 							INQUEUE_E = Color.Salmon,
 							POPPED_N = Color.SteelBlue,
@@ -20,73 +21,84 @@ namespace GraphAnimator
 							FOUND_N = Color.Cyan,
 							FOUND_E = Color.Blue;
 
-		private Nodes popped;
+		private Graph graph;
 		private IPriorityQueue pq;
-		private Nodes nodes, pushing;
+		private Nodes popped, pushing;
+		private Hashtable incomingEdge, proposedWeight;
 		private Canvas c;
 		private Thread t;
-		private Node popNode, home, destination;
+		private Node popNode;  //Node that has just been popped.
 		private int stepCount;
 		
-		public DijkstraAnimation(Nodes nodes, Node home, Node destination, Canvas c) : base()
+		public DijkstraAnimation(Graph g, Canvas c) : base()
 		{
 			popped = new Nodes();
 			pushing = new Nodes();
+			incomingEdge = new Hashtable();
+			proposedWeight = new Hashtable();
 			pq = new BinaryPriorityQueue(Node.sortAscending());
-			setUpNew(nodes.Clone(), home, destination);
+			Initialize(g);
 			this.c = c;
 			t = new Thread(new ThreadStart(Run));
 		}
-		private void setUpNew(Nodes nodes, Node home, Node destination)
+		private void Initialize(Graph g)
 		{
-			this.nodes = nodes;
-			foreach(Node n in nodes)
-			{
-				n.Distance = Int32.MaxValue;
-				n.Incoming = null;
-			}
-			this.home = home;
-			this.destination = destination;
-			this.home.Distance = 0;
-			t = new Thread(new ThreadStart(Run));
-			stepCount = 0;
+			graph = g;
 			pq.Clear();
-			pq.Push(home);
 			popped.Clear();
 			pushing.Clear();
+			incomingEdge.Clear();
+			proposedWeight.Clear();
+			for(int i=0; i<graph.Nodes.Length(); i++)
+			{
+				Node n = graph.Nodes[i];
+				n.Distance = int.MaxValue;
+				incomingEdge.Add(n,null);
+				proposedWeight.Add(n,int.MaxValue);
+			}
+			graph.Home.Distance = 0;
+			t = new Thread(new ThreadStart(Run));
+			stepCount = 0;
+			pq.Push(graph.Home);
 		}
 
 		#region Random Helper Methods
 
 		private void updateText()
 		{
-			foreach(Node n in nodes)
+			foreach(Node n in graph.Nodes)
 			{
 				string text = (n.Distance == Int32.MaxValue) ? INFINITY : n.Distance.ToString();
 				n.Text = text;
 			}
 		}
 
+		//Returns a string of either the distance of the value of our infinity const
 		private string getDistance(int i)
 		{
-			return (i == Int32.MaxValue) ? INFINITY : i.ToString();
+			return (i == int.MaxValue) ? INFINITY : i.ToString();
 		}
 
 		#endregion
 
 		#region Animation Helper Methods
 
+		/* Called at the end of the animation, 
+		 * determines whether destination was or 
+		 * wasn't found and colors nodes appropriately.
+		 */
 		private void finalize(bool wasFound)
 		{
 			if(wasFound) 
 			{
-				Node tmp = destination;
+				Node tmp = graph.Destination;
 				do
 				{
 					tmp.Color = FOUND_N;
-					if(tmp.Incoming == null) break;
-					tmp.Incoming.Color = FOUND_E;
-					tmp = Node.GetOther(tmp, tmp.Incoming);
+					if(incomingEdge[tmp] == null) break;
+					Edge edge = incomingEdge[tmp] as Edge;
+					edge.Color = FOUND_E;
+					tmp = Node.GetOther(tmp, edge);
 				}while(tmp != null);
 				MessageBox.Show("Destination Node Found!","Found!");
 			}
@@ -97,6 +109,11 @@ namespace GraphAnimator
 
 		}
 
+		/* Pops a node from the PQ and checks whether it is 
+		 * the destination node or was the last node in the PQ
+		 * and terminates the animation if necessary.  Colors
+		 * popNode and its incoming edge as appropriate.
+		 */
 		private void step1()
 		{
 			updateText();
@@ -109,11 +126,11 @@ namespace GraphAnimator
 			popNode = pq.Pop() as Node;
 			popNode.Color = POPPED_N;
 
-			if(popNode.Incoming != null)
-				popNode.Incoming.Color = POPPED_E;
+			if(incomingEdge[popNode] != null)
+				((Edge)incomingEdge[popNode]).Color = POPPED_E;
 
 			popped.Add(popNode);
-			if(popNode.Equals(destination))
+			if(popNode.Equals(graph.Destination))
 			{
 				stepCount = -1;
 				finalize(true);
@@ -121,88 +138,79 @@ namespace GraphAnimator
 			}
 			stepCount = 1;
 		}
+
+		/* Takes all the edges from popNode and adds the 
+		 * connecting nodes to list "pushing" which are nodes
+		 * that are about to be pushed to the PQ.  Also adjusts 
+		 * incoming edge if necessary and adjusts colors appropriately.
+		 */
 		private void step2()
 		{
 			pushing.Clear();
-			foreach(Edge edge in popNode.Edges)
+			for(int i=0; i<popNode.Edges.Length(); i++)
 			{
+				Edge edge = popNode.Edges[i];
 				Node n = Node.GetOther(popNode, edge);
 				if(popped.Contains(n)) continue;
 				edge.Color = INQUEUE_E;
-				n.Proposed = edge.Weight + Node.GetOther(n,edge).Distance;
-				if(n.Proposed < n.Distance)
-					n.Incoming = edge;
+				proposedWeight[n] = edge.Weight + Node.GetOther(n,edge).Distance;
+				if((int)proposedWeight[n] < n.Distance)
+					incomingEdge[n] = edge;
 				n.Text = edge.Weight.ToString()+"+"+popNode.Distance.ToString();
 				n.Color = INQUEUE_N;
 				pushing.Add(n);
 			}
 			stepCount = 2;
 		}
+		
+		/* Performs the comparison for the nodes in 
+		 * the pushing list.  Checks whether each
+		 * node's proposed weight is smaller than its 
+		 * current distance and displays the text of
+		 * this comparison.
+		 */
 		private void step3()
 		{
 			if(pushing.Length() <= 0)
 			{
-				step4();
+				stepCount = 0;
+				step1();
 				return;
 			}
-			foreach(Node n in pushing)
+			for(int i=0; i<pushing.Length(); i++)
 			{
-				if(n.Proposed < n.Distance)
+				Node n = pushing[i];
+				string dist = getDistance(n.Distance);
+				if((int)proposedWeight[n] < n.Distance)
 				{
-					n.Text = getDistance(n.Distance)+">"+n.Proposed;
-					n.Distance = n.Proposed;
+					n.Text = dist+">"+proposedWeight[n];
+					n.Distance = (int)proposedWeight[n];
+				}
+				else if((int)proposedWeight[n] > n.Distance)
+				{
+					n.Text = dist+"<"+proposedWeight[n];
 				}
 				else
 				{
-					n.Text = getDistance(n.Distance)+"<="+n.Proposed;
+					n.Text = dist+"="+proposedWeight[n];
 				}
 			}
 			stepCount = 3;
 		}
+
+		//Adds the nodes in pushing to the PQ.
 		private void step4()
 		{
 			updateText();
-			foreach(Node n in pushing)
+			for(int i=0; i<pushing.Length(); i++)
 			{
-				if(!pq.Contains(n))
+				if(!pq.Contains(pushing[i]))
 				{
-					pq.Push(n);
+					pq.Push(pushing[i]);
 				}
 			}
 			stepCount = 0;
 		}
-/*
-		private void unfinalize()
-		{
-			if(destination.Incoming == null) return;
-			Node tmp = destination;
-			do
-			{
-				tmp.Incoming.Color = POPPED_E;
-				tmp.Color = POPPED_N;
-				tmp = Node.GetOther(destination.Incoming);
-			}while(tmp != null);
-		}
-
-		private void stepBack1()
-		{
-			unfinalize();
-
-			count = 4;
-		}
-		private void stepBack2()
-		{
-
-		}
-		private void stepBack3()
-		{
-
-		}
-		private void stepBack4()
-		{
-
-		}
-*/
 
 		#endregion
 
@@ -242,8 +250,9 @@ namespace GraphAnimator
 		public override void Stop()
 		{
 			t.Abort();
-			foreach(Node n in nodes)
+			for(int i=0; i<graph.Nodes.Length(); i++)
 			{
+				Node n = graph.Nodes[i];
 				n.Color = Node.DEFAULT;
 				n.TextColor = Node.TEXT_DEFAULT;
 				n.Text = "";
@@ -252,7 +261,7 @@ namespace GraphAnimator
 					e.Color = Edge.DEFAULT;
 				}
 			}
-			setUpNew(nodes, home, destination);
+			Initialize(graph);
 		}
 
 		public override void StepBack()

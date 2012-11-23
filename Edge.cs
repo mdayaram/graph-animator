@@ -7,25 +7,27 @@ namespace GraphAnimator
 	public class Edge
 	{
 		public static Color DEFAULT = Color.Black;
-
 		public static int DEFAULT_WEIGHT = 10;
 		private int weight;
 		private Stroke stroke;
 		private Node a, b;
 		private Color color;
 
-		public Edge(Node a, Node b, InkOverlay i, int weight)
+		public Edge(Node n1, Node n2, InkOverlay i, int weight)
 		{
-			this.a = a;
-			this.b = b;
+			//Keep track of the nodes its attached to
+			this.a = n1;
+			this.b = n2;
 			this.weight = weight;
 			color = DEFAULT;
+			//Make sure the nodes contain this in their edges
 			a.Edges.Add(this);
 			b.Edges.Add(this);
 			Point[] p = {a.CenterPoint,b.CenterPoint};
+			//Draw a stroke connecting both nodes
 			this.stroke = i.Ink.CreateStroke(p);
 		}
-		public Edge(Node a, Node b, InkOverlay i) : this(a,b,i,Edge.DEFAULT_WEIGHT) {}
+		public Edge(Node n1, Node n2, InkOverlay i) : this(n1,n2,i,Edge.DEFAULT_WEIGHT) {}
 
 		#region Accessor and Mutator Methods
 		public Node NodeA
@@ -55,11 +57,12 @@ namespace GraphAnimator
 
 		#endregion
 		
+		//Checks if the two nodes have an edge connecting them
 		public static bool hasEdge(Node a, Node b)
 		{
-			foreach(Edge edge in a.Edges)
+			for(int i=0; i<a.Edges.Length(); i++)
 			{
-				if(edge.NodeA.Equals(b) || edge.NodeB.Equals(b))
+				if(a.Edges[i].NodeA.Equals(b) || a.Edges[i].NodeB.Equals(b))
 				{
 					return true;
 				}
@@ -87,6 +90,7 @@ namespace GraphAnimator
 			Edge edge = obj as Edge;
 			return (this.Stroke.Id == edge.Stroke.Id);
 		}
+		//Checks if the given stroke is equal to this edge
 		public bool strokeEquals(Stroke s)
 		{
 			return this.Stroke.Id == s.Id;

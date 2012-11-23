@@ -37,27 +37,29 @@ namespace GraphAnimator
 			}
 		}
 
+		//Get the node corresponding to the given stroke in this collection
 		public Node getNode(Stroke s)
 		{
-			foreach(Node n in list)
+			for(int i=0; i<list.Count; i++)
 			{
-				if(s.Id == n.Id)
-					return n;
+				if(s.Id == ((Node)list[i]).Id)
+					return list[i] as Node;
 			}
 			return null;
 		}
-		public Node[] getNodes(Strokes strokes)
+		//Get the nodes corresponding to the following strokes
+		public Nodes getNodes(Strokes strokes)
 		{
 			Nodes found = new Nodes();
-			foreach(Stroke s in strokes)
+			for(int i=0; i<strokes.Count; i++)
 			{
-				Node a = getNode(s);
+				Node a = getNode(strokes[i]);
 				if(a != null)
 				{
 					found.Add(a);
 				}
 			}
-			return (Node[])found.ToArray();
+			return found;
 		}
 
 		public void Add(Node n)
@@ -77,20 +79,20 @@ namespace GraphAnimator
 
 		public void Remove(int id)
 		{
-			foreach(Node n in list)
+			for(int i=0; i<list.Count; i++)
 			{
-				if(n.Id == id)
+				if(((Node)list[i]).Id == id)
 				{
-					list.Remove(n);
+					list.Remove(list[i]);
 				}
 			}
 		}
 
 		public bool Contains(Node n)
 		{
-			foreach(Node a in list)
+			for(int i=0; i<list.Count; i++)
 			{
-				if(a.Equals(n))
+				if(((Node)list[i]).Equals(n))
 					return true;
 			}
 			return false;
@@ -101,35 +103,7 @@ namespace GraphAnimator
 			return list.Count;
 		}
 
-		public Node getTappedNode(Stroke s)
-		{
-			if(s.PacketCount > 25) return null;
-			Point[] points = {s.GetPoint(0),s.GetPoint(s.PacketCount-1)};
-			foreach(Node n in list)
-			{
-				Rectangle r = n.Stroke.GetBoundingBox();
-				if(r.Contains(points[0]) && r.Contains(points[1]))
-					return n;
-			}
-			return null;
-		}
-
-		public Node HitNodeTest(Stroke s)
-		{
-			Rectangle rectS = s.GetBoundingBox();
-			Point sCenter = new Point(rectS.X + rectS.Width/2, rectS.Y + rectS.Height/2);
-			foreach(Node n in list)
-			{
-				Rectangle rectN =n.Stroke.GetBoundingBox();
-				if(s.HitTest(n.CenterPoint, (float)Math.Max(rectN.Height/2.0, rectN.Width/2.0))
-					||n.Stroke.HitTest(sCenter, (float)Math.Max(rectS.Height/2.0, rectS.Width/2.0)))
-				{
-					return n;
-				}
-			}
-			return null;
-		}
-
+		//Need to use "foreach" loop
 		public IEnumerator GetEnumerator()
 		{
 			return list.GetEnumerator();

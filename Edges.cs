@@ -8,7 +8,6 @@ namespace GraphAnimator
 	public class Edges
 	{
 		private ArrayList list;
-		private static int HIT_TEST_THRESHOLD = 2500;
 
 		public Edges() {list = new ArrayList();}
 		public Edges(int capacity) {list = new ArrayList(capacity);}
@@ -55,55 +54,38 @@ namespace GraphAnimator
 		{
 			return list.Count;
 		}
-
+		
+		//Gets the edge corresponding to the given stroke
 		public Edge getEdge(Stroke s)
 		{
-			foreach(Edge e in list)
+			for(int i=0; i<list.Count; i++)
 			{
-				if(s.Id == e.Stroke.Id)
+				Edge e = list[i] as Edge;
+				if(e.strokeEquals(s))
 					return e;
 			}
 			return null;
 		}
-		public Edge[] getEdges(Strokes strokes)
+		//Gets the edges corresponding to the given strokes
+		public Edges getEdges(Strokes strokes)
 		{
 			Edges found = new Edges();
-			foreach(Stroke s in strokes)
+			for(int i=0; i<strokes.Count; i++)
 			{
-				Edge e = getEdge(s);
+				Edge e = getEdge(strokes[i]);
 				if(e != null)
 				{
 					found.Add(e);
 				}
 			}
-			return (Edge[])found.ToArray();
+			return found;
 		}
 
 		public bool Contains(Edge e)
 		{
 			return list.Contains(e);
 		}
-
-		public Edge HitEdgeTest(Stroke s)
-		{
-			if(StrokeManager.StrokeLength(s) > HIT_TEST_THRESHOLD) return null;
-			float distance = 1300;
-			Edge hitedge = null;
-			foreach(Edge e in this)
-			{
-				float tmp;
-				Rectangle rect = e.Stroke.GetBoundingBox();
-				Point p = new Point(rect.X+rect.Width/2, rect.Y+rect.Height/2);
-				s.NearestPoint(p, out tmp);
-				if(tmp < distance)
-				{
-					distance = tmp;
-					hitedge = e;
-				}
-			}
-			return hitedge;
-		}
-
+		//Required in order to use a "foreach" loop
 		public IEnumerator GetEnumerator()
 		{
 			return list.GetEnumerator();
