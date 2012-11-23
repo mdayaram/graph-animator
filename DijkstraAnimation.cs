@@ -171,10 +171,24 @@ namespace GraphAnimator
 			}
 			stepCount = 0;
 		}
+/*
+		private void unfinalize()
+		{
+			if(destination.Incoming == null) return;
+			Node tmp = destination;
+			do
+			{
+				tmp.Incoming.Color = POPPED_E;
+				tmp.Color = POPPED_N;
+				tmp = Node.GetOther(destination.Incoming);
+			}while(tmp != null);
+		}
 
 		private void stepBack1()
 		{
-			
+			unfinalize();
+
+			count = 4;
 		}
 		private void stepBack2()
 		{
@@ -188,7 +202,7 @@ namespace GraphAnimator
 		{
 
 		}
-
+*/
 
 		#endregion
 
@@ -243,7 +257,7 @@ namespace GraphAnimator
 
 		public override void StepBack()
 		{
-			if(stepCount == 0)
+/*			if(stepCount == 0)
 				stepBack1();
 			else if (stepCount == 1)
 				stepBack2();
@@ -251,8 +265,9 @@ namespace GraphAnimator
 				stepBack3();
 			else if(stepCount == 3)
 				stepBack4();
-			c.Invalidate();
+			c.Invalidate();*/
 		}
+
 		#endregion
 
 	}

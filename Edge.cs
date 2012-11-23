@@ -69,18 +69,16 @@ namespace GraphAnimator
 
 		public void Render(InkOverlay i, Graphics g)
 		{
-			
+			int width = weight.ToString().Length*15;
+			int height = 18;
 			stroke.DrawingAttributes = i.DefaultDrawingAttributes.Clone();
 			stroke.DrawingAttributes.Color = color;
 			i.Renderer.Draw(g,stroke);
 			
 			Rectangle rect = StrokeManager.InkSpaceToPixelRect(i,g,stroke.GetBoundingBox());
-			Point center = new Point(rect.X+rect.Width/2 -15, rect.Y+rect.Height/2 -10);
-			if(rect.Width > 100)
-				center.Y -= 15;
-			if(rect.Height > 100)
-				center.X += 15;
-			g.DrawString(weight.ToString(), new Font("Arial",14),new SolidBrush(Color.Black), center);
+			Point center = new Point(rect.X+rect.Width/2 - width/2, rect.Y+rect.Height/2 - height/2);
+			g.FillRectangle(new SolidBrush(Color.White),center.X,center.Y,width, height);
+			g.DrawString(weight.ToString(), new Font("Courier New",14, FontStyle.Bold),new SolidBrush(Color.Black), center);
 		}
 
 		public override bool Equals(object obj)

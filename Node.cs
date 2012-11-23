@@ -9,9 +9,7 @@ namespace GraphAnimator
 
 	public class Node
 	{
-		public static Color DEFAULT = Color.AntiqueWhite,
-						    ENQUEUED = Color.Beige,
-						    DEQUEUED = Color.Aqua;
+		public static Color DEFAULT = Color.AntiqueWhite;
 
 		public static Color TEXT_DEFAULT = Color.Black;
 		

@@ -31,7 +31,7 @@ namespace GraphAnimator
 		//**********************
 		private int weight;
 		private Edge prevEdgeHit;
-		private System.Timers.Timer timer;
+		private System.Timers.Timer edgeTimer;
 		//**********************
 
 		#region Menu Items
@@ -64,8 +64,8 @@ namespace GraphAnimator
 			nodes = new Nodes();
 			edges = new Edges();
 			animStarted = false;
-			animType = -1;
 			weight = -1;
+			animType = -1;
 			prevEdgeHit = null;
 
 			// Declare repaint optimizations.
@@ -91,6 +91,7 @@ namespace GraphAnimator
 			inkOverlay.Stroke += new InkCollectorStrokeEventHandler(inkOverlay_Stroke);
 			inkOverlay.StrokesDeleting += new InkOverlayStrokesDeletingEventHandler(inkOverlay_StrokesDeleting);
 			inkOverlay.SelectionMoved += new InkOverlaySelectionMovedEventHandler(inkOverlay_SelectionMoved);
+			inkOverlay.SelectionResized +=new InkOverlaySelectionResizedEventHandler(inkOverlay_SelectionResized);
 			inkOverlay.Enabled = true;
 
 			/* Ugly hack to do number recognition on Edge only */
@@ -98,9 +99,10 @@ namespace GraphAnimator
 			int[] wIds = new int[0];
 			myRecognizer.Strokes = inkOverlay.Ink.CreateStrokes(wIds);
 			/* End of ugly hack */
-			timer = new System.Timers.Timer(TIME_INTERVAL);
-			timer.AutoReset = true;
-			timer.Elapsed +=new ElapsedEventHandler(timer_Elapsed);
+
+			edgeTimer = new System.Timers.Timer(TIME_INTERVAL);
+			edgeTimer.AutoReset = true;
+			edgeTimer.Elapsed +=new ElapsedEventHandler(edgeTimer_Elapsed);
 
 		}
 
@@ -222,25 +224,25 @@ namespace GraphAnimator
 			// 
 			this.toolBarButtonPlayPause.ImageIndex = 7;
 			this.toolBarButtonPlayPause.ToolTipText = "Play";
-			this.toolBarButtonPlayPause.Enabled = false;
+			this.toolBarButtonPlayPause.Enabled = true;
 			// 
 			// toolBarButtonStop
 			// 
 			this.toolBarButtonStop.ImageIndex = 9;
 			this.toolBarButtonStop.ToolTipText = "Stop";
-			this.toolBarButtonStop.Enabled = false;
+			this.toolBarButtonStop.Enabled = true;
 			// 
 			// toolBarButtonStepBack
 			// 
 			this.toolBarButtonStepBack.ImageIndex = 10;
 			this.toolBarButtonStepBack.ToolTipText = "Step Back";
-			this.toolBarButtonStepBack.Enabled = false;
+			this.toolBarButtonStepBack.Enabled = true;
 			// 
 			// toolBarButtonStepForward
 			// 
 			this.toolBarButtonStepForward.ImageIndex = 11;
 			this.toolBarButtonStepForward.ToolTipText = "Step Forward";
-			this.toolBarButtonStepForward.Enabled = false;
+			this.toolBarButtonStepForward.Enabled = true;
 			// 
 			// imageList1
 			// 
@@ -372,17 +374,21 @@ namespace GraphAnimator
 
 		private void playPauseButton(object sender, System.EventArgs e)
 		{
+			if(!isPlayable())
+			{
+				MessageBox.Show("Some conditions to start the animation are lacking.\n"+
+					"Please make sure you have assigned home and destination\n"+
+					"nodes and that you have selected an animation type from\n"+
+					"the drop down menu.");
+				return;
+			}
+
 			if(!animStarted)
 			{
 				NewAnimation();
+				animStarted = true;
 			}
 
-			if(home==null || destination == null)
-			{
-				MessageBox.Show("Please pick a home and destination node\nby drawing a star inside the a node.","Can't Animate Yet!");
-				return;
-			}
-			animStarted = true;
 			if(toolBarButtonPlayPause.ImageIndex == PLAY)
 				anim.Play();
 			else
@@ -411,6 +417,7 @@ namespace GraphAnimator
 
 		private void stopButton(object sender, System.EventArgs e)
 		{
+			if(!isPlayable()) return;
 			anim.Stop();
 			animStarted = false;
 			togglePlayPause(PLAY);
@@ -450,10 +457,6 @@ namespace GraphAnimator
 
 		private void Canvas_Paint(object sender, PaintEventArgs e)
 		{
-			foreach(Stroke s in myRecognizer.Strokes)
-			{
-				inkOverlay.Renderer.Draw(e.Graphics,s);
-			}
 			foreach(Edge edge in edges)
 			{
 				edge.Render(this.inkOverlay,e.Graphics);
@@ -470,11 +473,28 @@ namespace GraphAnimator
 					e.Graphics.DrawString("X",new Font("Arial",14,FontStyle.Bold) ,new SolidBrush(Color.Red),StrokeManager.InkSpaceToPixelRect(inkOverlay, e.Graphics,n.Stroke.GetBoundingBox()));
 				}
 			}
+			if(myRecognizer.Strokes.Count <= 0) return;
+			foreach(Stroke s in myRecognizer.Strokes)
+			{
+				try
+				{
+					inkOverlay.Renderer.Draw(e.Graphics,s);
+				}
+				catch(System.Runtime.InteropServices.COMException err)
+				{
+					MessageBox.Show("Dammit, not again!\n\n"+ err.ToString());
+				}
+			}
 		}
 		#region Node and Edge Handlers
 		private void AssignStarNode(Node n)
 		{
-			if(home == null)
+			if(n.Equals(destination))
+			{
+				destination = null;
+				home = n;
+			}
+			else if(home == null)
 			{
 				home = n;
 			}
@@ -484,6 +504,7 @@ namespace GraphAnimator
 			}
 			else
 			{
+
 				Node tmp = destination;
 				destination = n;
 				home = tmp;
@@ -531,7 +552,8 @@ namespace GraphAnimator
 		{	
 			if(this.InvokeRequired) return;
 
-			timer.Start();
+			//edgeTimer.BeginInit();
+			edgeTimer.Start();
 
 			Node n = nodes.getTappedNode(e.Stroke);
 			if(n != null)
@@ -558,13 +580,13 @@ namespace GraphAnimator
 			{
 				AssignStarNode(n);
 			}
-			else if(StrokeManager.isClosed(e.Stroke) && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
+			else if(StrokeManager.isClosed(e.Stroke) && n==null && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsCircleProperties(e.Stroke))
 			{
 				Stroke circle = StrokeManager.makeCircle(inkOverlay, e.Stroke);
 				Node circleNode = new Node(circle, false);
 				nodes.Add(circleNode);
 			}
-			else if(StrokeManager.isClosed(e.Stroke) && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
+			else if(StrokeManager.isClosed(e.Stroke) && n==null && e.Stroke.PacketCount > StrokeManager.SMALLEST_N_SIZE && StrokeManager.FitsRectProperties(e.Stroke))
 			{
 				Stroke rect = StrokeManager.makeRect(inkOverlay, e.Stroke);
 				Node rectNode = new Node(rect, true);
@@ -617,6 +639,8 @@ namespace GraphAnimator
 				{
 					Node n = nodes.getNode(s);
 					removeNode(n);
+					if(n.Equals(home)) home = null;
+					if(n.Equals(destination)) destination = null;
 				}
 				else
 				{
@@ -634,6 +658,25 @@ namespace GraphAnimator
 		}
 
 		private void inkOverlay_SelectionMoved(object sender, InkOverlaySelectionMovedEventArgs e)
+		{
+			if(this.InvokeRequired) return;
+						
+			Node[] selectedNodes = nodes.getNodes(inkOverlay.Selection);
+			foreach(Node n in selectedNodes)
+			{
+				Rectangle r = n.Stroke.GetBoundingBox();
+				n.CenterPoint = new Point(r.X+r.Width/2, r.Y+r.Height/2);
+			}
+			Edge[] selectedEdges = edges.getEdges(inkOverlay.Selection);
+			foreach(Edge edge in selectedEdges)
+			{
+				Point[] p = {edge.NodeA.CenterPoint,edge.NodeB.CenterPoint};
+				edge.Stroke.Ink.DeleteStroke(edge.Stroke);
+				edge.Stroke = edge.Stroke.Ink.CreateStroke(p);
+			}
+			Invalidate();
+		}
+		private void inkOverlay_SelectionResized(object sender, InkOverlaySelectionResizedEventArgs e)
 		{
 			if(this.InvokeRequired) return;
 						
@@ -688,49 +731,40 @@ namespace GraphAnimator
 
 		private void comboBox1_TextChanged(object sender, EventArgs e)
 		{
-			if(nodes.Length() < 0)
-			{
-				MessageBox.Show("You must have at least one node.", "Can't Initiate Animation");
-				return;
-			}
-			else if(home == null || destination == null)
-			{
-				MessageBox.Show("You must select a home and destination node before selecting an animation.", "Can't Initiate Animation");
-				return;
-			}
-			
 			if(comboBox1.Text.Equals("Dijkstra"))
 			{	
-				toolBarButtonPlayPause.Enabled = true;
-				toolBarButtonStop.Enabled = true;
-				toolBarButtonStepBack.Enabled = true;
-				toolBarButtonStepForward.Enabled = true;
 				animType = comboBox1.Items.IndexOf("Dijkstra");
 			}
 			else
 			{
-				anim = null;
-				toolBarButtonPlayPause.Enabled = false;
-				toolBarButtonStop.Enabled = false;
-				toolBarButtonStepBack.Enabled = false;
-				toolBarButtonStepForward.Enabled = false;
+				animType = -1;
 			}
 		}
 
 		private void RecognizeWeight()
 		{
+			edgeTimer.Stop();
 			if(myRecognizer.Strokes.Count <=0 || prevEdgeHit == null) return;
 			RecognitionStatus status;
 			string s = myRecognizer.Recognize(out status).TopString;
-			try { weight = Int32.Parse(s); }
+			s = s.Replace("l","1");
+			s = s.Replace("I","1");
+			s = s.Replace("|","1");
+			s = s.Replace("\\","1");
+			s = s.Replace("/","1");
+			s = s.Replace("s","5");
+			s = s.Replace("S","5");
+			s = s.Replace("o","0");
+			s = s.Replace("O","0");
+			try 
+			{ 
+				weight = Int32.Parse(s); 
+				prevEdgeHit.Weight = weight;
+			}
 			catch
 			{
 				Console.WriteLine("Sorry, "+s+" isn't a number.");
 				weight = -1;
-			}
-			if(weight >= 0)
-			{
-				prevEdgeHit.Weight = weight;
 			}
 			prevEdgeHit = null;
 			weight = -1;
@@ -744,11 +778,17 @@ namespace GraphAnimator
 			return s.Ink.CreateStroke(p);
 		}
 
-		private void timer_Elapsed(object sender, ElapsedEventArgs e)
+		private void edgeTimer_Elapsed(object sender, ElapsedEventArgs e)
 		{
 			RecognizeWeight();
-			timer.Stop();
 			Invalidate();
 		}
+
+		private bool isPlayable()
+		{
+			return home != null && destination != null && 
+				nodes.Length() > 0 && animType >= 0;
+		}
+
 	}
 }

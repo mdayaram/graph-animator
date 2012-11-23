@@ -86,21 +86,19 @@ namespace GraphAnimator
 
 		public Edge HitEdgeTest(Stroke s)
 		{
-			Point[] points = s.GetPoints();
 			if(StrokeManager.StrokeLength(s) > HIT_TEST_THRESHOLD) return null;
-			float distance = 100;
+			float distance = 1300;
 			Edge hitedge = null;
 			foreach(Edge e in this)
 			{
-				foreach(Point p in points)
+				float tmp;
+				Rectangle rect = e.Stroke.GetBoundingBox();
+				Point p = new Point(rect.X+rect.Width/2, rect.Y+rect.Height/2);
+				s.NearestPoint(p, out tmp);
+				if(tmp < distance)
 				{
-					float tmp;
-					e.Stroke.NearestPoint(p, out tmp);
-					if(tmp < distance)
-					{
-						distance = tmp;
-						hitedge = e;
-					}
+					distance = tmp;
+					hitedge = e;
 				}
 			}
 			return hitedge;
