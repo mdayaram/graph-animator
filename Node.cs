@@ -13,15 +13,15 @@ namespace GraphAnimator
 						    ENQUEUED = Color.Beige,
 						    DEQUEUED = Color.Aqua;
 
-		public static Color TEXT_DEFAULT = Color.Black,
-							TEXT_ACTIVE = Color.Red,
-							TEXT_COMPARED = Color.DarkMagenta,
-							TEXT_COMPLETE = Color.DarkBlue;
+		public static Color TEXT_DEFAULT = Color.Black;
 		
 		private int id;
 		private Stroke stroke;
 		private Point centerPoint;
 		private string text;
+		private int distance;
+		private int proposed;
+		private Edge incomingEdge;
 		private Color fillColor, textColor;
 		private Edges edges;
 		private bool isRect;
@@ -37,6 +37,8 @@ namespace GraphAnimator
 			edges = new Edges();
 			textColor = TEXT_DEFAULT;
 			text = "";
+			distance = Int32.MaxValue;
+			incomingEdge = null;
 		}
 		public Node(Stroke stroke) : this(stroke, false) {}
 
@@ -61,12 +63,43 @@ namespace GraphAnimator
 		public Point CenterPoint
 		{
 			get{return centerPoint;}
-			set{centerPoint = value;}
+			set
+			{
+				centerPoint = value;
+				foreach(Edge e in this.edges)
+				{
+					Point[] p = new Point[2];
+					p[0] = centerPoint;
+					p[1] = Node.GetOther(this,e).CenterPoint;
+					e.Stroke.Ink.DeleteStroke(e.Stroke);
+					e.Stroke = stroke.Ink.CreateStroke(p);
+				}
+			}
 		}
 		public string Text
 		{
 			get{return text;}
 			set{text = value;}
+		}
+		public Color TextColor
+		{
+			get{return textColor;}
+			set{textColor = value;}
+		}
+		public int Distance
+		{
+			get{return distance;}
+			set{distance = value;}
+		}
+		public int Proposed
+		{
+			get{return proposed;}
+			set{proposed = value;}
+		}
+		public Edge Incoming
+		{
+			get{return incomingEdge;}
+			set{incomingEdge = value;}
 		}
 		#endregion
 
@@ -79,7 +112,7 @@ namespace GraphAnimator
 
 		public void Render(InkOverlay i, Graphics g)
 		{
-
+			//if(stroke.Deleted == true) return;
 			Rectangle rect = stroke.GetBoundingBox();
 			rect = StrokeManager.InkSpaceToPixelRect(i, g, rect);
 
@@ -93,7 +126,30 @@ namespace GraphAnimator
 			i.Renderer.InkSpaceToPixel(g, ref p);
 			p[0].X -= 15;
 			p[0].Y -= 10;
-			g.DrawString(text, new Font("Arial",14), new SolidBrush(textColor), p[0]);
+			g.DrawString(text, new Font("Arial",10), new SolidBrush(textColor), p[0]);
 		}
+
+		public static Node GetOther(Node n, Edge e)
+		{
+			if(n == null || !n.Edges.Contains(e)) return null;
+			return (n.Equals(e.NodeB)) ? e.NodeA : e.NodeB;
+		}
+
+		#region IComparer Methods and Classes
+		public static IComparer sortAscending()
+		{      
+			return (IComparer) new sortAscendingDistance();
+		}
+
+		private class sortAscendingDistance : IComparer
+		{
+			public int Compare(object x, object y)
+			{
+				Node nx = x as Node;
+				Node ny = y as Node;
+				return nx.Distance - ny.Distance;
+			}
+		}
+		#endregion
 	}
 }

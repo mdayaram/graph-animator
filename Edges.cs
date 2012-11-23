@@ -54,6 +54,34 @@ namespace GraphAnimator
 			return list.Count;
 		}
 
+		public Edge getEdge(Stroke s)
+		{
+			foreach(Edge e in list)
+			{
+				if(s.Id == e.Stroke.Id)
+					return e;
+			}
+			return null;
+		}
+		public Edge[] getEdges(Strokes strokes)
+		{
+			Edges found = new Edges();
+			foreach(Stroke s in strokes)
+			{
+				Edge e = getEdge(s);
+				if(e != null)
+				{
+					found.Add(e);
+				}
+			}
+			return (Edge[])found.ToArray();
+		}
+
+		public bool Contains(Edge e)
+		{
+			return list.Contains(e);
+		}
+
 		public IEnumerator GetEnumerator()
 		{
 			return list.GetEnumerator();

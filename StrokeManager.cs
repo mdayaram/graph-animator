@@ -137,13 +137,14 @@ namespace GraphAnimator
 			}
 			return nodesHit;
 		}
+
         #endregion
 
 		#region Random Stroke Helper Methods
 
 		public static bool isStar(Stroke s)
 		{
-			return s.SelfIntersections.Length > 3 && StrokeManager.isClosed(s, 400);
+			return s.SelfIntersections.Length > 3 && StrokeManager.isClosed(s, 600);
 		}
 	
 		public static Rectangle InkSpaceToPixelRect(InkOverlay i, Graphics g, Rectangle rect)

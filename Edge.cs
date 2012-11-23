@@ -6,15 +6,15 @@ namespace GraphAnimator
 {
 	public class Edge
 	{
-		public static Color DEFAULT = Color.Black,
-							ACTIVE = Color.Red,
-							DONE = Color.Blue;
+		public static Color DEFAULT = Color.Black;
+
 		public static int DEFAULT_WEIGHT = 10;
-		private Node a, b;
 		private int weight;
+		private Stroke stroke;
+		private Node a, b;
 		private Color color;
 
-		public Edge(Node a, Node b, int weight)
+		public Edge(Node a, Node b, InkOverlay i, int weight)
 		{
 			this.a = a;
 			this.b = b;
@@ -22,8 +22,10 @@ namespace GraphAnimator
 			color = DEFAULT;
 			a.Edges.Add(this);
 			b.Edges.Add(this);
+			Point[] p = {a.CenterPoint,b.CenterPoint};
+			this.stroke = i.Ink.CreateStroke(p);
 		}
-		public Edge(Node a, Node b) : this(a,b,Edge.DEFAULT_WEIGHT) {}
+		public Edge(Node a, Node b, InkOverlay i) : this(a,b,i,Edge.DEFAULT_WEIGHT++) {}
 
 		#region Accessor and Mutator Methods
 		public Node NodeA
@@ -45,6 +47,11 @@ namespace GraphAnimator
 			get{return weight;}
 			set{weight = value;}
 		}
+		public Stroke Stroke
+		{
+			get{return stroke;}
+			set{stroke = value;}
+		}
 
 		#endregion
 		
@@ -62,12 +69,11 @@ namespace GraphAnimator
 
 		public void Render(InkOverlay i, Graphics g)
 		{
-			Point[] p = {a.CenterPoint,b.CenterPoint};
-			Stroke stroke = i.Ink.CreateStroke(p);
-			stroke.DrawingAttributes = i.DefaultDrawingAttributes;
+			
+			stroke.DrawingAttributes = i.DefaultDrawingAttributes.Clone();
 			stroke.DrawingAttributes.Color = color;
 			i.Renderer.Draw(g,stroke);
-
+			
 			Rectangle rect = StrokeManager.InkSpaceToPixelRect(i,g,stroke.GetBoundingBox());
 			Point center = new Point(rect.X+rect.Width/2 -15, rect.Y+rect.Height/2 -10);
 			if(rect.Width > 100)
@@ -81,15 +87,11 @@ namespace GraphAnimator
 		{
 			if(obj == null) return false;
 			Edge edge = obj as Edge;
-			return (this.a.Equals(edge.a) && this.b.Equals(edge.b)) ||
-					(this.a.Equals(edge.b) && this.b.Equals(edge.a));
+			return (this.Stroke.Id == edge.Stroke.Id);
 		}
 		public bool strokeEquals(Stroke s)
-		{	
-			if(s == null) return false;
-			Point[] p = {s.GetPoint(0), s.GetPoint(s.PacketCount-1)};
-			return (p[0].Equals(this.a.CenterPoint) && p[1].Equals(this.b.CenterPoint)) ||
-				   (p[0].Equals(this.b.CenterPoint) && p[1].Equals(this.a.CenterPoint));
+		{
+			return this.Stroke.Id == s.Id;
 		}
 
 	}

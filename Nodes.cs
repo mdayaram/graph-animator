@@ -86,6 +86,16 @@ namespace GraphAnimator
 			}
 		}
 
+		public bool Contains(Node n)
+		{
+			foreach(Node a in list)
+			{
+				if(a.Equals(n))
+					return true;
+			}
+			return false;
+		}
+
 		public int Length()
 		{
 			return list.Count;
