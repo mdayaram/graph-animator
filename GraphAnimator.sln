@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphAnimator", "GraphAnimator.csproj", "{DA2C2BC3-EB80-4819-A728-F33E68A6ADCC}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{DA2C2BC3-EB80-4819-A728-F33E68A6ADCC}.Debug.ActiveCfg = Debug|.NET
+		{DA2C2BC3-EB80-4819-A728-F33E68A6ADCC}.Debug.Build.0 = Debug|.NET
+		{DA2C2BC3-EB80-4819-A728-F33E68A6ADCC}.Release.ActiveCfg = Release|.NET
+		{DA2C2BC3-EB80-4819-A728-F33E68A6ADCC}.Release.Build.0 = Release|.NET
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
