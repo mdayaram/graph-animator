@@ -25,7 +25,7 @@ Though it may not seem like enough, these are the only buttons necessary in orde
 
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image005.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image003.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image007.jpg)
 
-To make an edge, one merely connects two or more nodes together in one stroke. If the stroke goes over several nodes, the program will make an edge connected each pair of consecutive nodes with a default weight of ten. 
+To make an edge, one merely connects two or more nodes together in one stroke. If the stroke goes over several nodes, the program will make an edge connected each pair of consecutive nodes with a default weight of ten.
 
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image009.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image003.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image011.jpg)
 
