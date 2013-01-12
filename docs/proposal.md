@@ -1,5 +1,7 @@
-Dijkstra's Algorithm Tablet Simulation
-======================================
+Graph Animator Proposal
+=======================
+
+# Dijkstra's Algorithm Tablet Simulation
 
 **by <a href="https://www.google.com/recaptcha/mailhide/d?k=01vKBXg12XP9GeR5bxrmga_w==&amp;c=rZBSr-L6v-4LgCyK8GcSBw==" onclick="window.open('https://www.google.com/recaptcha/mailhide/d?k\07501vKBXg12XP9GeR5bxrmga_w\75\75\46c\75rZBSr-L6v-4LgCyK8GcSBw\75\075', '', 'toolbar=0,scrollbars=0,location=0,statusbar=0,menubar=0,resizable=0,width=500,height=300'); return false;">Manoj Dayaram</a>**
 
