@@ -85,7 +85,7 @@ Applying weights on an edge will be simply executed by drawing the number on top
 
 Finally, declaring the home node or the starting node and declaring the destination or end node will be done by the following drawing assignment: the user would draw a star on the node he/she wishes to make the home node and can then draw a star at the node he/she wished to be the destination node: 
 
-Home ![](<proposal_files/image011.gif)
+Home ![](https://raw.github.com/mdayaram/graph-animator/master/docs/proposal_files/image011.gif)
 
 Destination ![](https://raw.github.com/mdayaram/graph-animator/master/docs/proposal_files/image012.gif)
 
