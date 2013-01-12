@@ -7,12 +7,10 @@ This is a project I worked on the the spring semester of my sophomore year in co
 
 It was actually kind of funny.  I spent the first half of the semester meeting with him and we would literary spend the entire meeting asking eachother:
 
-```
-Guna: So what would you like to do?
-Me: I don't know, what would you like me to do?
-Guna: Well, how about something related to tablets and pedagogy?
-Me: Sounds great! Let me get back to you with some ideas.
-```
+> Guna: So what would you like to do?
+> Me: I don't know, what would you like me to do?
+> Guna: Well, how about something related to tablets and pedagogy?
+> Me: Sounds great! Let me get back to you with some ideas.
 
 Finally, the week before spring break I came up with a tablet application for simulating Dijkstra's Algorithm which is what we were learning in class at the time.  He gave me the OK to go at it, I wrote a [proposal](https://github.com/mdayaram/graph-animator/blob/master/docs/proposal.md), and spent pretty much all of spring break working on it.
 
