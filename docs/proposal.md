@@ -169,4 +169,4 @@ The user will then have a choice to run the animation again, stop the animation 
 
 Below is a final animated simulation of the entire workflow:
 
-![](https://raw.github.com/mdayaram/graph-animator/master/docs/proposal_files/animation.gif) 
+![](https://raw.github.com/mdayaram/graph-animator/master/docs/proposal_files/animation.gif)
