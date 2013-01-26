@@ -23,43 +23,29 @@ From left to right, the buttons represent New, Open, Save, Save As, Pen, Eraser,
 
 Though it may not seem like enough, these are the only buttons necessary in order to fully interact with Graph Animator. In order to draw a node, the user simple draws a square or a circle representative of a node and the program then converts it to a node. The stroke is recognized as a circle if the starting position is relatively close to its ending position and if the length of the stroke is somewhat similar to the circumference of a circle in the same area. Similar measures are taken in order to determine if the stroke drawn is a rectangle.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image005.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image003.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image007.jpg)
-</div>
 
 To make an edge, one merely connects two or more nodes together in one stroke. If the stroke goes over several nodes, the program will make an edge connected each pair of consecutive nodes with a default weight of ten.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image009.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image003.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image011.jpg)
-</div>
 
 Of course, the graph isn't very useful if the only edge weight possible is ten, so if the user wants to change an edge weight, he just has to write the new desired weight on top of the current one. The program will recognize that the user is attempting to write an edge weight and will wait a second after every stroke in order for him to finish writing the desired weight and once done, will recognize it.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image014.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image012.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image016.jpg)
-</div>
 
 If the user makes a mistake, he or she can use the eraser tool to erase nodes and/or edges that he doesn't find a need for anymore. The scratch out gesture has also been implemented to delete all nodes and edges that touch a scratch out. A scratch out is determined by a single stroke that intersects itself at least three times, whose length is at least three times its width, and whose height is at most three quarters its width.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image019.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image017.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image021.jpg)
-</div>
 
 Using the lasso or selection tool, one can also move or even resize the nodes around. This can be useful if the user is working on one graph and would like to work on another graph but still keeping the current one in perspective. The could potentially shrink the current graph small enough and drag it to a corner, still offering plenty of room for a new graph without having to delete the old one.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image024.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image012.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image026.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image012.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image028.jpg)
-</div>
 
 When working with graphs, two nodes are usually unique in terms that they stand for home and destination. These nodes can easily be assigned by drawing a star inside the node desired. The first starred node will be interpreted by the program as the home node, and the second starred node will be interpreted as the destination. After that, every additional starred node will be interpreted as a new destination, making the last destination the new home.
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image030.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image022.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image032.jpg)
-</div>
 
-<div class="center">
 ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image034.jpg) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image022.gif) ![](https://raw.github.com/mdayaram/graph-animator/master/docs/finalreport_files/image036.jpg)
-</div>
 
 And that's it! Those are all the features used in creating a graph. There is not so many as to overwhelm the user when trying to make a simple graph, but there is more than enough to build complex graphs and being able to experience all sorts of cases of the algorithm. The next step is the actual animation.
 
